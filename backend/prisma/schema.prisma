@@ -1,0 +1,104 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String  @id @default(cuid())
+  email       String  @unique
+  username    String  @unique
+  isVerified  Boolean @default(false)
+
+  // OTP
+  otpCode     String?
+  otpExpiry   DateTime?
+  otpAttempts Int     @default(0)
+
+  // Stellar wallet
+  stellarPublicKey  String? @unique
+  stellarSecretKey  String? // AES-256-GCM encrypted
+  encryptedMnemonic String? // BIP-39 mnemonic, AES-256-GCM encrypted
+
+  // Security & backup
+  faceIdEnabled Boolean @default(false)
+  isBackedUp    Boolean @default(false)
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  // Relations
+  transactions Transaction[]
+  deviceTokens DeviceToken[]
+
+  @@index([email])
+  @@index([username])
+  @@index([stellarPublicKey])
+}
+
+model Transaction {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  type   TransactionType
+  status TransactionStatus @default(pending)
+
+  amount Float
+  // USDC | EURC | BTC | GOLD | XLM
+  asset  String
+
+  // stellar (always)
+  network String @default("stellar")
+
+  fromAddress String?
+  toAddress   String?
+  toUsername  String? // @dayfi.me username if internal
+
+  stellarTxHash String? @unique
+
+  memo String?
+  fee  Float?
+
+  // Swap-specific fields
+  isSwap        Boolean @default(false)
+  swapFromAsset String?
+  swapToAsset   String?
+  receivedAmount Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([asset])
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String   // ios | android
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum TransactionType {
+  send
+  receive
+  swap
+}
+
+enum TransactionStatus {
+  pending
+  confirmed
+  failed
+}

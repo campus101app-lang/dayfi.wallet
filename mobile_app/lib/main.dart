@@ -1,0 +1,155 @@
+// lib/main.dart
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'theme/app_theme.dart';
+import 'router.dart';
+import 'providers/user_provider.dart';
+import 'package:flutter/foundation.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
+
+Future<void> _initFirebase(WidgetRef ref) async {
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  final messaging = FirebaseMessaging.instance;
+  await messaging.requestPermission(alert: true, badge: true, sound: true);
+  final token = await messaging.getToken();
+  if (token != null) {
+    await ref.read(userNotifierProvider.notifier).registerDeviceToken(
+      token,
+      defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+    );
+  }
+  messaging.onTokenRefresh.listen((newToken) {
+    ref.read(userNotifierProvider.notifier).registerDeviceToken(
+      newToken,
+      defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+    );
+  });
+  FirebaseMessaging.onMessage.listen((msg) {
+    debugPrint('FCM foreground: ${msg.notification?.title}');
+  });
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  runApp(const ProviderScope(child: DayFiApp()));
+}
+
+class DayFiApp extends ConsumerStatefulWidget {
+  const DayFiApp({super.key});
+  @override
+  ConsumerState<DayFiApp> createState() => _DayFiAppState();
+}
+
+class _DayFiAppState extends ConsumerState<DayFiApp>
+    with WidgetsBindingObserver {
+  final _auth   = LocalAuthentication();
+  bool _blurred = false;
+  bool _authenticating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try { await _initFirebase(ref); } catch (e) { debugPrint('Firebase: $e'); }
+      // Authenticate on first open if Face ID enabled and token valid
+      await _tryAuthenticate();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      final prefs = await SharedPreferences.getInstance();
+      final faceEnabled = prefs.getBool('faceIdEnabled') ?? false;
+      if (faceEnabled) setState(() => _blurred = true);
+    } else if (state == AppLifecycleState.resumed) {
+      if (_blurred) await _tryAuthenticate();
+    }
+  }
+
+  Future<void> _tryAuthenticate() async {
+    if (_authenticating) return;
+    final prefs = await SharedPreferences.getInstance();
+    final faceEnabled = prefs.getBool('faceIdEnabled') ?? false;
+    if (!faceEnabled) {
+      if (mounted) setState(() => _blurred = false);
+      return;
+    }
+
+    _authenticating = true;
+    try {
+      final ok = await _auth.authenticate(
+        localizedReason: 'Authenticate to open DayFi',
+        options: const AuthenticationOptions(biometricOnly: true, stickyAuth: true),
+      );
+      if (mounted) setState(() => _blurred = !ok);
+    } catch (_) {
+      if (mounted) setState(() => _blurred = true);
+    } finally {
+      _authenticating = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
+
+    return MaterialApp.router(
+      title: 'DayFi',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
+      routerConfig: appRouter,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child ?? const SizedBox(),
+            if (_blurred)
+              GestureDetector(
+                onTap: _tryAuthenticate,
+                child: Container(
+                  color: Colors.black.withOpacity(0.95),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.face_retouching_natural,
+                            size: 64, color: Colors.white),
+                        const SizedBox(height: 20),
+                        Text('Tap to unlock',
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.dark);

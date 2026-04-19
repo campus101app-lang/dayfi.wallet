@@ -1,0 +1,37 @@
+🔐 MASTER WALLET BACKUP - KEEP SAFE!
+═════════════════════════════════════════════════════════════
+
+⚠️  WARNING: This file contains the original secret key for the master wallet.
+   NEVER commit this to git or version control!
+   KEEP THIS SAFE - without it, you cannot recover the wallet!
+
+📅 Created: 2026-04-19
+🌍 Network: Stellar Mainnet
+
+═════════════════════════════════════════════════════════════
+
+📍 PUBLIC KEY (safe to share):
+GAN7757SJVHQJILEZFBNQP5JE76635S2NHYXCKQSRPYPTHSR6CAG62HK
+
+🔑 ORIGINAL SECRET KEY (starts with S - SAVE THIS!):
+SBZWIFGTOERQLPCVETM5DXMNEYGNLH2H6UR4NTMWZKC43U7F7ZS74SRU
+
+═════════════════════════════════════════════════════════════
+
+💡 HOW TO USE THIS:
+1. If you need to decrypt the master wallet secret from .env, use this S... key
+2. If auto-funding stops working and you need to debug, use this key
+3. If you need to manually transfer funds, use this key in a wallet like LOBSTR
+
+🚨 WHAT NOT TO DO:
+- Don't commit this file to git
+- Don't share this key publicly
+- Don't paste it in chat/email
+- Consider printing this and storing in a safe
+
+═════════════════════════════════════════════════════════════
+
+ENCRYPTED VERSION (stored in .env):
+MASTER_WALLET_SECRET_KEY=587564e9d85fec8fc50585f9809d9215:5d273af64324fadb902a0da3d15b3fcf:5faf82377d197e4cfafa9a627740950255c47be5ffb3ec73aefe80617c8c032c8bafb5b0e572680f2baca7c79174281e1f5e1c90043848b3
+
+═════════════════════════════════════════════════════════════

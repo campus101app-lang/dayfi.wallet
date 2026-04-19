@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dayfi
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/dayfi
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    command: >
+      sh -c "npx prisma migrate deploy && node src/index.js"
+
+  website:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./website:/usr/share/nginx/html:ro
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:
