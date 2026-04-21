@@ -16,74 +16,61 @@ import StellarSdk from "@stellar/stellar-sdk";
 
 const router = express.Router();
 
-// ─── Asset Configuration with Emojis ─────────────────────────────────────────
+// ─── Asset Configuration ──────────────────────────────────────────────────────
 
 const ASSET_CONFIG = {
   USDC: {
     name: 'USD Coin',
     emoji: '💵',
-    description: 'Regulated US Dollar stablecoin',
+    description: 'Regulated US Dollar stablecoin by Circle',
     regulated: true,
-    issuers: [
-      {
-        key: 'stellar_usdc',
-        label: 'Circle (Stellar)',
-        description: 'Issued by Circle on Stellar Network',
-        emoji: '⭐',
-      },
-    ],
+    issuers: [{ key: 'stellar_usdc', label: 'Circle (Stellar)', description: 'Issued by Circle on Stellar Network', emoji: '⭐' }],
   },
   XLM: {
     name: 'Stellar Lumens',
     emoji: '🌟',
     description: 'Native Stellar asset',
     regulated: false,
-    issuers: [
-      {
-        key: 'stellar_xlm',
-        label: 'Stellar',
-        description: 'Native Stellar Network token',
-        emoji: '⭐',
-      },
-    ],
+    issuers: [{ key: 'stellar_xlm', label: 'Stellar', description: 'Native Stellar Network token', emoji: '⭐' }],
   },
-  // BTC: {
-  //   name: 'Bitcoin',
-  //   emoji: '🟠',
-  //   description: 'Bitcoin via bridge',
-  //   regulated: false,
-  //   issuers: [
-  //     {
-  //       key: 'BTC',
-  //       label: 'Stellar Bridge',
-  //       description: 'Bitcoin on Stellar',
-  //       emoji: '🟠',
-  //     },
-  //     {
-  //       key: 'BTC_ALT',
-  //       label: 'Alternative Bridge',
-  //       description: 'Bitcoin alternate issuance',
-  //       emoji: '🟠',
-  //     },
-  //   ],
-  // },
-  // GOLD: {
-  //   name: 'Gold Token',
-  //   emoji: '🥇',
-  //   description: 'Tokenized gold',
-  //   regulated: false,
-  //   issuers: [
-  //     {
-  //       key: 'stellar_gold',
-  //       label: 'Stellar',
-  //       description: 'Gold token on Stellar',
-  //       emoji: '🥇',
-  //     },
-  //   ],
-  // },
+  EURC: {
+    name: 'Euro Coin',
+    emoji: '💶',
+    description: 'Regulated Euro stablecoin by Circle (MiCA compliant)',
+    regulated: true,
+    issuers: [{ key: 'stellar_eurc', label: 'Circle (Stellar)', description: 'Issued by Circle on Stellar Network', emoji: '⭐' }],
+  },
+  PYUSD: {
+    name: 'PayPal USD',
+    emoji: '🅿️',
+    description: 'US Dollar stablecoin by PayPal',
+    regulated: true,
+    issuers: [{ key: 'stellar_pyusd', label: 'PayPal (Stellar)', description: 'Issued by PayPal on Stellar Network', emoji: '⭐' }],
+  },
+  BENJI: {
+    name: 'Franklin OnChain US Gov Money Fund',
+    emoji: '🏛️',
+    description: 'Tokenized US government money market fund by Franklin Templeton',
+    regulated: true,
+    issuers: [{ key: 'stellar_benji', label: 'Franklin Templeton (Stellar)', description: 'Tokenized fund on Stellar', emoji: '⭐' }],
+  },
+  USDY: {
+    name: 'Ondo US Dollar Yield',
+    emoji: '📈',
+    description: 'Yield-bearing dollar token backed by US Treasuries by Ondo Finance',
+    regulated: true,
+    issuers: [{ key: 'stellar_usdy', label: 'Ondo Finance (Stellar)', description: 'Issued by Ondo Finance on Stellar', emoji: '⭐' }],
+  },
+  WTGOLD: {
+    name: 'WisdomTree Gold Token',
+    emoji: '🥇',
+    description: 'Tokenized physical gold backed 1:1, custodied by HSBC',
+    regulated: true,
+    issuers: [{ key: 'stellar_wtgold', label: 'WisdomTree (Stellar)', description: 'Tokenized gold on Stellar Network', emoji: '⭐' }],
+  },
 };
 
-// ─── Shared Price Cache ──────────────────────────────────────────────────────
+// ─── Shared Price Cache ───────────────────────────────────────────────────────
 
 let _priceCache = null;
 let _priceCacheTime = 0;
@@ -93,18 +80,23 @@ async function getLivePrices() {
   const now = Date.now();
   if (_priceCache && (now - _priceCacheTime) < PRICE_CACHE_TTL) return _priceCache;
   try {
-    // Fetch prices from CoinGecko (free API)
-    const res  = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=usd-coin,stellar,meld-gold&vs_currencies=usd');
+    const res = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=usd-coin,stellar,euro-coin,paypal-usd&vs_currencies=usd'
+    );
     const data = await res.json();
     _priceCache = {
-      USDC: data['usd-coin']?.usd ?? 1.0,
-      XLM:  data['stellar']?.usd  ?? 0.16,
-      GOLD: data['meld-gold']?.usd ?? 65.0, // Approximate gold price per gram
+      USDC:   data['usd-coin']?.usd   ?? 1.0,
+      XLM:    data['stellar']?.usd    ?? 0.169,
+      EURC:   data['euro-coin']?.usd  ?? 1.08,
+      PYUSD:  data['paypal-usd']?.usd ?? 1.0,
+      BENJI:  1.0,   // Stable NAV
+      USDY:   1.0,   // Pegged to $1
+      WTGOLD: parseFloat(process.env.WTGOLD_PRICE_USD || '3200'),
     };
     _priceCacheTime = now;
     return _priceCache;
   } catch {
-    return { USDC: 1.0, XLM: 0.16, GOLD: 65.0 };
+    return { USDC: 1.0, XLM: 0.169, EURC: 1.08, PYUSD: 1.0, BENJI: 1.0, USDY: 1.0, WTGOLD: 3200 };
   }
 }
 
@@ -120,24 +112,22 @@ router.get('/assets', authenticate, (req, res) => {
     network: 'stellar',
     issuers: config.issuers,
   }));
-
-  res.json({
-    network: 'stellar',
-    assets,
-  });
+  res.json({ network: 'stellar', assets });
 });
 
 // ─── GET /api/wallet/networks ─────────────────────────────────────────────────
 
 router.get('/networks', authenticate, (req, res) => {
-  // For now: only Stellar is supported
-  // Assets available on Stellar
   const assets = {
-    'USDC': ['stellar'],
-    'XLM': ['stellar'],
+    'USDC':   ['stellar'],
+    'XLM':    ['stellar'],
+    'EURC':   ['stellar'],
+    'PYUSD':  ['stellar'],
+    'BENJI':  ['stellar'],
+    'USDY':   ['stellar'],
+    'WTGOLD': ['stellar'],
   };
 
-  // Network configuration
   const networks = {
     'stellar': {
       name: 'Stellar Network',
@@ -147,10 +137,7 @@ router.get('/networks', authenticate, (req, res) => {
     },
   };
 
-  res.json({
-    assets,
-    networks,
-  });
+  res.json({ assets, networks });
 });
 
 // ─── GET /api/wallet/swap-quote ───────────────────────────────────────────────
@@ -163,21 +150,23 @@ router.get('/swap-quote', authenticate, async (req, res) => {
 
   try {
     const { server } = await import('../services/walletService.js');
-    
-    // 1. Try Stellar Horizon for real DEX path
+
+    // Try Stellar Horizon for real DEX path
     try {
-      const paths = await server.strictSendPaths(
-        from === 'XLM' ? StellarSdk.Asset.native() : new StellarSdk.Asset(from, ISSUERS[from]),
-        amount,
-        [to === 'XLM' ? StellarSdk.Asset.native() : new StellarSdk.Asset(to, ISSUERS[to])]
-      ).call();
+      const fromAssetObj = from === 'XLM'
+        ? StellarSdk.Asset.native()
+        : new StellarSdk.Asset(from, ISSUERS[from]);
+      const toAssetObj = to === 'XLM'
+        ? StellarSdk.Asset.native()
+        : new StellarSdk.Asset(to, ISSUERS[to]);
+
+      const paths = await server.strictSendPaths(fromAssetObj, amount, [toAssetObj]).call();
 
       if (paths.records.length) {
         const best = paths.records[0];
         console.log(`✅ QUOTE FOUND: ${amount} ${from} = ${best.destination_amount} ${to}`);
         return res.json({
-          fromAsset: from,
-          toAsset: to,
+          fromAsset: from, toAsset: to,
           fromAmount: parseFloat(amount),
           buy_amount: parseFloat(best.destination_amount).toFixed(6),
           price: (parseFloat(best.destination_amount) / parseFloat(amount)).toFixed(6),
@@ -188,14 +177,13 @@ router.get('/swap-quote', authenticate, async (req, res) => {
       console.warn(`⚠️  Horizon quote failed for ${from}->${to}:`, e.message);
     }
 
-    // 2. Fallback to Price API
+    // Fallback to price API
     const PRICES = await getLivePrices();
     const toAmt = (parseFloat(amount) * (PRICES[from] || 1)) / (PRICES[to] || 1);
 
     console.log(`✅ QUOTE FALLBACK: ${amount} ${from} = ${toAmt.toFixed(6)} ${to}`);
     return res.json({
-      fromAsset: from,
-      toAsset: to,
+      fromAsset: from, toAsset: to,
       fromAmount: parseFloat(amount),
       buy_amount: toAmt.toFixed(6),
       price: (toAmt / parseFloat(amount)).toFixed(6),
@@ -228,9 +216,6 @@ router.post('/swap', authenticate, [
     res.json({ success: true, transaction: result });
   } catch (err) {
     console.error(`❌ SWAP FAILED for user ${req.user.id}:`, err.message);
-    console.error('Full error:', err);
-    
-    // User-friendly error messages
     let userMessage = err.message || 'Swap failed';
     if (err.message.includes('no path') || err.message.includes('No liquidity')) {
       userMessage = `Not enough liquidity to swap ${fromAsset} to ${toAsset}. Try a smaller amount.`;
@@ -278,7 +263,14 @@ router.get('/address', authenticate, (req, res) => {
   res.json({
     stellarAddress: req.user.stellarPublicKey,
     dayfiUsername: `${req.user.username}@dayfi.me`,
-    assets: [{ code: 'USDC', name: 'USD Coin', issuer: ISSUERS.USDC }],
+    assets: [
+      { code: 'USDC',   name: 'USD Coin',               issuer: ISSUERS.USDC   },
+      { code: 'EURC',   name: 'Euro Coin',               issuer: ISSUERS.EURC   },
+      { code: 'PYUSD',  name: 'PayPal USD',              issuer: ISSUERS.PYUSD  },
+      { code: 'BENJI',  name: 'Franklin OnChain Fund',   issuer: ISSUERS.BENJI  },
+      { code: 'USDY',   name: 'Ondo US Dollar Yield',    issuer: ISSUERS.USDY   },
+      { code: 'WTGOLD', name: 'WisdomTree Gold Token',   issuer: ISSUERS.WTGOLD },
+    ],
   });
 });
 
@@ -322,22 +314,24 @@ router.get('/check-trustlines', authenticate, async (req, res) => {
 
     const balances = account.balances || [];
     const hasTrustlines = {
-      USDC: balances.some(b => b.asset_code === 'USDC'),
-      XLM: true, // Always native
+      XLM:    true, // Always native
+      USDC:   balances.some(b => b.asset_code === 'USDC'   && b.asset_issuer === ISSUERS.USDC),
+      EURC:   balances.some(b => b.asset_code === 'EURC'   && b.asset_issuer === ISSUERS.EURC),
+      PYUSD:  balances.some(b => b.asset_code === 'PYUSD'  && b.asset_issuer === ISSUERS.PYUSD),
+      BENJI:  balances.some(b => b.asset_code === 'BENJI'  && b.asset_issuer === ISSUERS.BENJI),
+      USDY:   balances.some(b => b.asset_code === 'USDY'   && b.asset_issuer === ISSUERS.USDY),
+      WTGOLD: balances.some(b => b.asset_code === 'WTGOLD' && b.asset_issuer === ISSUERS.WTGOLD),
     };
 
     const allReady = Object.values(hasTrustlines).every(v => v);
 
-    res.json({
-      ready: allReady,
-      trustlines: hasTrustlines,
-    });
+    res.json({ ready: allReady, trustlines: hasTrustlines });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ─── POST /api/wallet/admin/send (Master Wallet) ─────────────────────────────
+// ─── POST /api/wallet/admin/send ──────────────────────────────────────────────
 
 router.post('/admin/send', authenticate, [
   body('recipientAddress').notEmpty().isLength({ min: 56, max: 56 }),
@@ -347,11 +341,8 @@ router.post('/admin/send', authenticate, [
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  // Simple admin check: verify user is admin (you can add more sophisticated checks)
   const isAdmin = process.env.ADMIN_EMAILS?.split(',').includes(req.user.email);
-  if (!isAdmin) {
-    return res.status(403).json({ error: 'Only admins can send from master wallet' });
-  }
+  if (!isAdmin) return res.status(403).json({ error: 'Only admins can send from master wallet' });
 
   const { recipientAddress, amount, memo } = req.body;
   try {
@@ -362,38 +353,23 @@ router.post('/admin/send', authenticate, [
   }
 });
 
-// ─── POST /api/wallet/test-funding (Testing only - auto-fund user) ────────────
+// ─── POST /api/wallet/test-funding ───────────────────────────────────────────
 
 router.post('/test-funding', authenticate, async (req, res) => {
   try {
-    const fundingAmount = 1.0;
-    const userAddress = req.user.stellarPublicKey;
-
-    if (!userAddress) {
-      return res.status(400).json({ error: 'User wallet not created' });
-    }
-
-    const result = await sendFromMasterWallet(userAddress, fundingAmount, 'Test funding');
-    res.json({
-      success: true,
-      message: `✅ Funded ${fundingAmount} XLM to your wallet`,
-      transaction: result,
-    });
+    const result = await sendFromMasterWallet(req.user.stellarPublicKey, 1.0, 'Test funding');
+    res.json({ success: true, message: '✅ Funded 1.0 XLM to your wallet', transaction: result });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// ─── Sync transactions from blockchain ────────────────────────────────────────
+// ─── POST /api/wallet/sync-transactions ──────────────────────────────────────
 
 router.post('/sync-transactions', authenticate, async (req, res) => {
   try {
     const result = await syncBlockchainTransactions(req.user.id);
-    res.json({
-      success: true,
-      message: `✅ Synced ${result.synced} transactions from blockchain`,
-      synced: result.synced,
-    });
+    res.json({ success: true, message: `✅ Synced ${result.synced} transactions`, synced: result.synced });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

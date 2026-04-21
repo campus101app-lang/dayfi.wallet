@@ -109,7 +109,7 @@ class _RecoveryPhraseScreenState extends State<RecoveryPhraseScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Wallet backed up ✓'),
+            content: Text('Wallet backed up'),
             backgroundColor: DayFiColors.green,
           ),
         );

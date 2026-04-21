@@ -1,9 +1,8 @@
-// src/index.js
+import 'dotenv/config'; 
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 
 import authRoutes        from './routes/auth.js';
 import walletRoutes      from './routes/wallet.js';
@@ -14,8 +13,6 @@ import sep24Routes       from './routes/sep24.js';
 import sep38Routes       from './routes/sep38.js';
 import tomlRoutes        from './routes/toml.js';
 import { errorHandler }  from './middleware/errorHandler.js';
-
-dotenv.config();
 
 const app  = express();
 const PORT = process.env.PORT || 3001;

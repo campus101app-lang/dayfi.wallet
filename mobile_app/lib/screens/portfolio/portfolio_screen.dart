@@ -210,57 +210,115 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
     );
   }
 
-  Widget _buildBody(
+Widget _buildBody(
     BuildContext context,
     WalletState w,
     List<Map<String, dynamic>> txs,
   ) {
     const xlmReserve = 2.0;
-    final xlmPrice = w.xlmPriceUSD;
-
-    // Deduct reserve from XLM balance everywhere
-    final xlmDisplayBalance = (w.xlmBalance - xlmReserve > 0)
-        ? (w.xlmBalance - xlmReserve)
-        : 0.0;
-    final xlmUSD = xlmDisplayBalance * xlmPrice;
-    final usdcUSD = w.usdcBalance;
-    final totalUSD = xlmUSD + usdcUSD;
-
-    final xlmPoints = _buildPoints(txs, 'XLM', xlmDisplayBalance, xlmPrice);
-    final usdcPoints = _buildPoints(txs, 'USDC', w.usdcBalance, 1.0);
-    final combined = _combinePoints(xlmPoints, usdcPoints);
-
+    final xlmPrice    = w.xlmPriceUSD;
+    final eurcPrice   = w.eurcPriceUSD;
+    final goldPrice   = w.wtgoldPriceUSD;
+ 
+    // XLM: deduct reserve
+    final xlmDisplay  = (w.xlmBalance - xlmReserve > 0) ? (w.xlmBalance - xlmReserve) : 0.0;
+ 
+    // USD values per asset
+    final xlmUSD    = xlmDisplay         * xlmPrice;
+    final usdcUSD   = w.usdcBalance;
+    final eurcUSD   = w.eurcBalance      * eurcPrice;
+    final pyusdUSD  = w.pyusdBalance;
+    final benjiUSD  = w.benjiBalance;
+    final usdyUSD   = w.usdyBalance;
+    final goldUSD   = w.wtgoldBalance    * goldPrice;
+    final totalUSD  = xlmUSD + usdcUSD + eurcUSD + pyusdUSD + benjiUSD + usdyUSD + goldUSD;
+ 
+    // Sparkline points per asset
+    final xlmPoints   = _buildPoints(txs, 'XLM',    xlmDisplay,       xlmPrice);
+    final usdcPoints  = _buildPoints(txs, 'USDC',   w.usdcBalance,    1.0);
+    final eurcPoints  = _buildPoints(txs, 'EURC',   w.eurcBalance,    eurcPrice);
+    final pyusdPoints = _buildPoints(txs, 'PYUSD',  w.pyusdBalance,   1.0);
+    final benjiPoints = _buildPoints(txs, 'BENJI',  w.benjiBalance,   1.0);
+    final usdyPoints  = _buildPoints(txs, 'USDY',   w.usdyBalance,    1.0);
+    final goldPoints  = _buildPoints(txs, 'WTGOLD', w.wtgoldBalance,  goldPrice);
+ 
+    // Combined sparkline for total portfolio
+    var combined = _combinePoints(xlmPoints, usdcPoints);
+    combined = _combinePoints(combined, eurcPoints);
+    combined = _combinePoints(combined, pyusdPoints);
+    combined = _combinePoints(combined, benjiPoints);
+    combined = _combinePoints(combined, usdyPoints);
+    combined = _combinePoints(combined, goldPoints);
+ 
     final changePct = _computeChange(combined);
-    final changeAbs = combined.length >= 2
-        ? combined.last - combined.first
-        : 0.0;
-
-    final xlmDetail = _AssetDetail(
-      code: 'XLM',
-      name: 'Stellar Lumens',
-      imagePath: 'assets/images/stellar.png',
-      balance: xlmDisplayBalance,
-      usdValue: xlmUSD,
-      changePercent: _computeChange(xlmPoints),
-      available: xlmDisplayBalance,
-      reserved: xlmReserve,
-      price: xlmPrice,
-      points: xlmPoints,
-    );
-
-    final usdcDetail = _AssetDetail(
-      code: 'USDC',
-      name: 'USD Coin',
-      imagePath: 'assets/images/usdc.png',
-      balance: w.usdcBalance,
-      usdValue: usdcUSD,
-      changePercent: _computeChange(usdcPoints),
-      available: w.usdcBalance,
-      reserved: 0,
-      price: 1.0,
-      points: usdcPoints,
-    );
-
+    final changeAbs = combined.length >= 2 ? combined.last - combined.first : 0.0;
+ 
+    // Build _AssetDetail for each asset — only show if balance > 0 OR always show XLM/USDC
+    final allDetails = [
+      _AssetDetail(
+        code: 'XLM', name: 'Stellar Lumens',
+        imagePath: 'assets/images/stellar.png',
+        balance: xlmDisplay, usdValue: xlmUSD,
+        changePercent: _computeChange(xlmPoints),
+        available: xlmDisplay, reserved: xlmReserve,
+        price: xlmPrice, points: xlmPoints,
+      ),
+      _AssetDetail(
+        code: 'USDC', name: 'USD Coin',
+        imagePath: 'assets/images/usdc.png',
+        balance: w.usdcBalance, usdValue: usdcUSD,
+        changePercent: _computeChange(usdcPoints),
+        available: w.usdcBalance, reserved: 0,
+        price: 1.0, points: usdcPoints,
+      ),
+      _AssetDetail(
+        code: 'EURC', name: 'Euro Coin',
+        imagePath: 'assets/images/eurc.png',
+        balance: w.eurcBalance, usdValue: eurcUSD,
+        changePercent: _computeChange(eurcPoints),
+        available: w.eurcBalance, reserved: 0,
+        price: eurcPrice, points: eurcPoints,
+      ),
+      _AssetDetail(
+        code: 'PYUSD', name: 'PayPal USD',
+        imagePath: 'assets/images/pyusd.png',
+        balance: w.pyusdBalance, usdValue: pyusdUSD,
+        changePercent: _computeChange(pyusdPoints),
+        available: w.pyusdBalance, reserved: 0,
+        price: 1.0, points: pyusdPoints,
+      ),
+      _AssetDetail(
+        code: 'BENJI', name: 'Franklin OnChain Fund',
+        imagePath: 'assets/images/benji.png',
+        balance: w.benjiBalance, usdValue: benjiUSD,
+        changePercent: _computeChange(benjiPoints),
+        available: w.benjiBalance, reserved: 0,
+        price: 1.0, points: benjiPoints,
+      ),
+      _AssetDetail(
+        code: 'USDY', name: 'Ondo US Dollar Yield',
+        imagePath: 'assets/images/usdy.png',
+        balance: w.usdyBalance, usdValue: usdyUSD,
+        changePercent: _computeChange(usdyPoints),
+        available: w.usdyBalance, reserved: 0,
+        price: 1.0, points: usdyPoints,
+      ),
+      _AssetDetail(
+        code: 'WTGOLD', name: 'WisdomTree Gold',
+        imagePath: 'assets/images/wtgold.png',
+        balance: w.wtgoldBalance, usdValue: goldUSD,
+        changePercent: _computeChange(goldPoints),
+        available: w.wtgoldBalance, reserved: 0,
+        price: goldPrice, points: goldPoints,
+      ),
+    ];
+ 
+    // Always show XLM and USDC; show others only if non-zero balance
+    final visibleDetails = allDetails.where((a) {
+      if (a.code == 'XLM' || a.code == 'USDC') return true;
+      return a.balance > 0;
+    }).toList();
+ 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Column(
@@ -272,13 +330,41 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
           _buildChangeRow(changePct, changeAbs),
           const SizedBox(height: 20),
           _buildReserveNotice(context),
-          _buildAssetsSection(context, xlmDetail, usdcDetail, w),
+          _buildAssetsSection(context, visibleDetails, w, totalUSD),
           const SizedBox(height: 48),
         ],
       ),
     );
   }
-
+ 
+  // ─── Assets section (updated signature) ──────────────────
+ 
+  Widget _buildAssetsSection(
+    BuildContext context,
+    List<_AssetDetail> assets,
+    WalletState w,
+    double totalUSD,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        ...assets.asMap().entries.map((e) {
+          final a = e.value;
+          final alloc = totalUSD > 0 ? a.usdValue / totalUSD : 0.0;
+          return _AssetCard(
+            detail: a,
+            allocPct: alloc,
+            onTap: () => _openAssetDetail(context, a),
+          )
+              .animate()
+              .fadeIn(delay: Duration(milliseconds: 350 + e.key * 80))
+              .slideX(begin: 0.04, end: 0);
+        }),
+      ],
+    );
+  }
+ 
   // ─── Total value ──────────────────────────────────────────
 
   Widget _buildTotalValue(double total) {
@@ -645,44 +731,6 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
         ),
       ],
     ).animate().fadeIn(delay: 300.ms);
-  }
-
-  // ─── Assets section ───────────────────────────────────────
-
-  Widget _buildAssetsSection(
-    BuildContext context,
-    _AssetDetail xlm,
-    _AssetDetail usdc,
-    WalletState w,
-  ) {
-    final assets = [xlm, usdc];
-    final total = w.totalUSD - (2.0 * w.xlmPriceUSD);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.3,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...assets.asMap().entries.map((e) {
-          final a = e.value;
-          final alloc = total > 0 ? a.usdValue / total : 0.0;
-          return _AssetCard(
-                detail: a,
-                allocPct: alloc,
-                onTap: () => {_openAssetDetail(context, a)},
-              )
-              .animate()
-              .fadeIn(delay: Duration(milliseconds: 350 + e.key * 80))
-              .slideX(begin: 0.04, end: 0);
-        }),
-      ],
-    );
   }
 }
 

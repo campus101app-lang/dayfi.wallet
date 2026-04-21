@@ -11,7 +11,16 @@ import '../services/api_service.dart';
 class WalletState {
   final double usdcBalance;
   final double xlmBalance;
+  final double eurcBalance;
+  final double pyusdBalance;
+  final double benjiBalance;
+  final double usdyBalance;
+  final double wtgoldBalance;
+
   final double xlmPriceUSD;
+  final double eurcPriceUSD;
+  final double wtgoldPriceUSD;
+
   final String? stellarAddress;
   final String? dayfiUsername;
   final bool isLoading;
@@ -23,28 +32,93 @@ class WalletState {
   final double? lastKnownTotal;
 
   const WalletState({
-    this.usdcBalance = 0.0,
-    this.xlmBalance = 0.0,
-    this.xlmPriceUSD = 0.169,
+    this.usdcBalance    = 0.0,
+    this.xlmBalance     = 0.0,
+    this.eurcBalance    = 0.0,
+    this.pyusdBalance   = 0.0,
+    this.benjiBalance   = 0.0,
+    this.usdyBalance    = 0.0,
+    this.wtgoldBalance  = 0.0,
+    this.xlmPriceUSD    = 0.169,
+    this.eurcPriceUSD   = 1.08,
+    this.wtgoldPriceUSD = 3200.0,
     this.stellarAddress,
     this.dayfiUsername,
-    this.isLoading = false,
+    this.isLoading    = false,
     this.isRefreshing = false,
     this.error,
     this.lastUpdated,
-    this.hasError = false,
+    this.hasError  = false,
     this.isOffline = false,
     this.lastKnownTotal,
   });
 
-  double get totalUSD => usdcBalance + (xlmBalance * xlmPriceUSD);
-  double get availableXLM => xlmBalance > 1.0 ? xlmBalance - 1.0 : 0.0;
+  // Total USD value across all assets
+  double get totalUSD =>
+      usdcBalance +
+      (xlmBalance     * xlmPriceUSD)    +
+      (eurcBalance    * eurcPriceUSD)   +
+      pyusdBalance    +   // pegged to $1
+      benjiBalance    +   // stable $1 NAV
+      usdyBalance     +   // pegged to $1
+      (wtgoldBalance  * wtgoldPriceUSD);
+
+  double get availableXLM => xlmBalance > 2.0 ? xlmBalance - 2.0 : 0.0;
   double get availableXLMUSD => availableXLM * xlmPriceUSD;
+
+  /// Returns balance for any asset code — used by swap/send screens.
+  double balanceFor(String code) {
+    switch (code) {
+      case 'USDC':   return usdcBalance;
+      case 'XLM':    return xlmBalance;
+      case 'EURC':   return eurcBalance;
+      case 'PYUSD':  return pyusdBalance;
+      case 'BENJI':  return benjiBalance;
+      case 'USDY':   return usdyBalance;
+      case 'WTGOLD': return wtgoldBalance;
+      default:       return 0.0;
+    }
+  }
+
+  /// USD value for any asset code.
+  double usdValueFor(String code) {
+    switch (code) {
+      case 'USDC':   return usdcBalance;
+      case 'XLM':    return xlmBalance    * xlmPriceUSD;
+      case 'EURC':   return eurcBalance   * eurcPriceUSD;
+      case 'PYUSD':  return pyusdBalance;
+      case 'BENJI':  return benjiBalance;
+      case 'USDY':   return usdyBalance;
+      case 'WTGOLD': return wtgoldBalance * wtgoldPriceUSD;
+      default:       return 0.0;
+    }
+  }
+
+  /// Price per unit for any asset code.
+  double priceFor(String code) {
+    switch (code) {
+      case 'USDC':   return 1.0;
+      case 'XLM':    return xlmPriceUSD;
+      case 'EURC':   return eurcPriceUSD;
+      case 'PYUSD':  return 1.0;
+      case 'BENJI':  return 1.0;
+      case 'USDY':   return 1.0;
+      case 'WTGOLD': return wtgoldPriceUSD;
+      default:       return 0.0;
+    }
+  }
 
   WalletState copyWith({
     double? usdcBalance,
     double? xlmBalance,
+    double? eurcBalance,
+    double? pyusdBalance,
+    double? benjiBalance,
+    double? usdyBalance,
+    double? wtgoldBalance,
     double? xlmPriceUSD,
+    double? eurcPriceUSD,
+    double? wtgoldPriceUSD,
     String? stellarAddress,
     String? dayfiUsername,
     bool? isLoading,
@@ -56,17 +130,24 @@ class WalletState {
     double? lastKnownTotal,
   }) {
     return WalletState(
-      usdcBalance: usdcBalance ?? this.usdcBalance,
-      xlmBalance: xlmBalance ?? this.xlmBalance,
-      xlmPriceUSD: xlmPriceUSD ?? this.xlmPriceUSD,
+      usdcBalance:    usdcBalance    ?? this.usdcBalance,
+      xlmBalance:     xlmBalance     ?? this.xlmBalance,
+      eurcBalance:    eurcBalance    ?? this.eurcBalance,
+      pyusdBalance:   pyusdBalance   ?? this.pyusdBalance,
+      benjiBalance:   benjiBalance   ?? this.benjiBalance,
+      usdyBalance:    usdyBalance    ?? this.usdyBalance,
+      wtgoldBalance:  wtgoldBalance  ?? this.wtgoldBalance,
+      xlmPriceUSD:    xlmPriceUSD    ?? this.xlmPriceUSD,
+      eurcPriceUSD:   eurcPriceUSD   ?? this.eurcPriceUSD,
+      wtgoldPriceUSD: wtgoldPriceUSD ?? this.wtgoldPriceUSD,
       stellarAddress: stellarAddress ?? this.stellarAddress,
-      dayfiUsername: dayfiUsername ?? this.dayfiUsername,
-      isLoading: isLoading ?? this.isLoading,
-      isRefreshing: isRefreshing ?? this.isRefreshing,
-      error: error,
-      lastUpdated: lastUpdated ?? this.lastUpdated,
-      hasError: hasError ?? this.hasError,
-      isOffline: isOffline ?? this.isOffline,
+      dayfiUsername:  dayfiUsername  ?? this.dayfiUsername,
+      isLoading:      isLoading      ?? this.isLoading,
+      isRefreshing:   isRefreshing   ?? this.isRefreshing,
+      error:          error,
+      lastUpdated:    lastUpdated    ?? this.lastUpdated,
+      hasError:       hasError       ?? this.hasError,
+      isOffline:      isOffline      ?? this.isOffline,
       lastKnownTotal: lastKnownTotal ?? this.lastKnownTotal,
     );
   }
@@ -79,35 +160,28 @@ class WalletNotifier extends StateNotifier<WalletState> {
     load();
   }
 
-  Future<double> _fetchXlmPrice() async {
+  // Fetch XLM price from CoinGecko; also grab EURC price
+  Future<Map<String, double>> _fetchPrices() async {
     try {
       final res = await http
-          .get(
-            Uri.parse(
-              'https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd',
-            ),
-          )
+          .get(Uri.parse(
+            'https://api.coingecko.com/api/v3/simple/price'
+            '?ids=stellar,euro-coin&vs_currencies=usd',
+          ))
           .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        return (data['stellar']['usd'] as num).toDouble();
+        return {
+          'XLM':  (data['stellar']    ?['usd'] as num?)?.toDouble() ?? state.xlmPriceUSD,
+          'EURC': (data['euro-coin']  ?['usd'] as num?)?.toDouble() ?? state.eurcPriceUSD,
+        };
       }
     } catch (_) {}
-    return state
-        .xlmPriceUSD; // reuse last known price rather than hardcoded fallback
+    return { 'XLM': state.xlmPriceUSD, 'EURC': state.eurcPriceUSD };
   }
 
-  // ─── Helpers ────────────────────────────────────────────
-
-  /// Returns the best "last known total" to preserve across failures.
-  /// Only updates when we have a confirmed successful fetch with a live price.
-  double? _computeLastKnown({
-    required double usdcBalance,
-    required double xlmBalance,
-    required double xlmPrice,
-  }) {
-    final live = usdcBalance + (xlmBalance * xlmPrice);
-    // Only save as lastKnown if it's a meaningful non-zero value
+  double? _computeLastKnown(WalletState s) {
+    final live = s.totalUSD;
     return live > 0 ? live : state.lastKnownTotal;
   }
 
@@ -121,120 +195,102 @@ class WalletNotifier extends StateNotifier<WalletState> {
         e.toString().contains('Connection refused');
   }
 
-  // ─── Initial load ────────────────────────────────────────
+  WalletState _applyBalances(
+    WalletState current,
+    Map<String, dynamic> balances,
+    Map<String, double> prices,
+  ) {
+    return current.copyWith(
+      usdcBalance:    (balances['USDC']   as num?)?.toDouble() ?? 0.0,
+      xlmBalance:     (balances['XLM']    as num?)?.toDouble() ?? 0.0,
+      eurcBalance:    (balances['EURC']   as num?)?.toDouble() ?? 0.0,
+      pyusdBalance:   (balances['PYUSD']  as num?)?.toDouble() ?? 0.0,
+      benjiBalance:   (balances['BENJI']  as num?)?.toDouble() ?? 0.0,
+      usdyBalance:    (balances['USDY']   as num?)?.toDouble() ?? 0.0,
+      wtgoldBalance:  (balances['WTGOLD'] as num?)?.toDouble() ?? 0.0,
+      xlmPriceUSD:    prices['XLM']  ?? current.xlmPriceUSD,
+      eurcPriceUSD:   prices['EURC'] ?? current.eurcPriceUSD,
+    );
+  }
+
+  // ─── Initial load ─────────────────────────────────────────
 
   Future<void> load() async {
-    state = state.copyWith(
-      isLoading: true,
-      hasError: false,
-      isOffline: false,
-      error: null,
-    );
+    state = state.copyWith(isLoading: true, hasError: false, isOffline: false, error: null);
 
     try {
       final results = await Future.wait([
         apiService.getBalance(),
         apiService.getAddress(),
-        _fetchXlmPrice(),
+        _fetchPrices(),
       ]);
 
       final balanceData = results[0] as Map<String, dynamic>;
       final addressData = results[1] as Map<String, dynamic>;
-      final xlmPrice = results[2] as double;
-      final balances = balanceData['balances'] as Map<String, dynamic>? ?? {};
+      final prices      = results[2] as Map<String, double>;
+      final balances    = balanceData['balances'] as Map<String, dynamic>? ?? {};
 
-      final usdc = (balances['USDC'] as num?)?.toDouble() ?? 0.0;
-      final xlm = (balances['XLM'] as num?)?.toDouble() ?? 0.0;
-
-      state = state.copyWith(
-        usdcBalance: usdc,
-        xlmBalance: xlm,
-        xlmPriceUSD: xlmPrice,
+      final next = _applyBalances(state, balances, prices).copyWith(
         stellarAddress: addressData['stellarAddress'] as String?,
-        dayfiUsername: addressData['dayfiUsername'] as String?,
-        isLoading: false,
-        hasError: false,
-        isOffline: false,
-        lastKnownTotal: _computeLastKnown(
-          usdcBalance: usdc,
-          xlmBalance: xlm,
-          xlmPrice: xlmPrice,
-        ),
-        lastUpdated: DateTime.now(),
+        dayfiUsername:  addressData['dayfiUsername']  as String?,
+        isLoading:      false,
+        hasError:       false,
+        isOffline:      false,
+        lastUpdated:    DateTime.now(),
       );
+
+      state = next.copyWith(lastKnownTotal: _computeLastKnown(next));
     } catch (e) {
       final offline = _isNetworkError(e);
       state = state.copyWith(
         isLoading: false,
-        hasError: !offline,
+        hasError:  !offline,
         isOffline: offline,
-        error: e.toString(),
-        // balances stay at 0 on first load failure — lastKnownTotal is null
-        // so the UI will show $— instead of $0.00
+        error:     e.toString(),
       );
     }
   }
 
-  // ─── Periodic / pull-to-refresh ──────────────────────────
+  // ─── Refresh ──────────────────────────────────────────────
 
   Future<void> refresh() async {
     if (state.isRefreshing) return;
 
-    // Snapshot the best "previous total" before touching state
-    final previousTotal = state.totalUSD > 0
-        ? state.totalUSD
-        : state.lastKnownTotal;
+    final previousTotal = state.totalUSD > 0 ? state.totalUSD : state.lastKnownTotal;
 
-    state = state.copyWith(
-      isRefreshing: true,
-      hasError: false,
-      isOffline: false,
-      error: null,
-    );
+    state = state.copyWith(isRefreshing: true, hasError: false, isOffline: false, error: null);
 
     try {
       final results = await Future.wait([
         apiService.getBalance(),
-        _fetchXlmPrice(),
+        _fetchPrices(),
       ]);
 
       final balanceData = results[0] as Map<String, dynamic>;
-      final xlmPrice = results[1] as double;
-      final balances = balanceData['balances'] as Map<String, dynamic>? ?? {};
+      final prices      = results[1] as Map<String, double>;
+      final balances    = balanceData['balances'] as Map<String, dynamic>? ?? {};
 
-      final usdc = (balances['USDC'] as num?)?.toDouble() ?? 0.0;
-      final xlm = (balances['XLM'] as num?)?.toDouble() ?? 0.0;
-
-      state = state.copyWith(
-        usdcBalance: usdc,
-        xlmBalance: xlm,
-        xlmPriceUSD: xlmPrice,
+      final next = _applyBalances(state, balances, prices).copyWith(
         isRefreshing: false,
-        hasError: false,
-        isOffline: false,
-        lastKnownTotal: _computeLastKnown(
-          usdcBalance: usdc,
-          xlmBalance: xlm,
-          xlmPrice: xlmPrice,
-        ),
-        lastUpdated: DateTime.now(),
+        hasError:     false,
+        isOffline:    false,
+        lastUpdated:  DateTime.now(),
       );
+
+      state = next.copyWith(lastKnownTotal: _computeLastKnown(next));
     } catch (e) {
       final offline = _isNetworkError(e);
       state = state.copyWith(
-        isRefreshing: false,
-        hasError: !offline,
-        isOffline: offline,
-        error: e.toString(),
-        // Restore balances from last known so UI doesn't flash 0.00
-        usdcBalance: state.usdcBalance,
-        xlmBalance: state.xlmBalance,
+        isRefreshing:   false,
+        hasError:       !offline,
+        isOffline:      offline,
+        error:          e.toString(),
         lastKnownTotal: previousTotal,
       );
     }
   }
 
-  // ─── Send ────────────────────────────────────────────────
+  // ─── Send ─────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> send({
     required String to,
@@ -242,30 +298,18 @@ class WalletNotifier extends StateNotifier<WalletState> {
     required String asset,
     String? memo,
   }) async {
-    final result = await apiService.sendFunds(
-      to: to,
-      amount: amount,
-      asset: asset,
-      memo: memo,
-    );
+    final result = await apiService.sendFunds(to: to, amount: amount, asset: asset, memo: memo);
     await refresh();
     return result;
   }
 
-  // ─── Resolve recipient ───────────────────────────────────
+  // ─── Resolve recipient ────────────────────────────────────
 
   Future<Map<String, dynamic>?> resolveRecipient(String identifier) async {
     if (identifier.length < 3) return null;
-
-    // ── If it's a valid Stellar address, resolve directly — no API lookup needed
     if (_isStellarAddress(identifier)) {
-      return {
-        'stellarAddress': identifier,
-        'dayfiUsername': null,
-        'displayName': identifier,
-      };
+      return { 'stellarAddress': identifier, 'dayfiUsername': null, 'displayName': identifier };
     }
-
     try {
       return await apiService.resolveRecipient(identifier);
     } catch (_) {
@@ -276,30 +320,24 @@ class WalletNotifier extends StateNotifier<WalletState> {
   bool _isStellarAddress(String input) {
     return input.length == 56 &&
         input.startsWith('G') &&
-        RegExp(r'^[A-Z2-7]+$').hasMatch(input); // Stellar uses base32
+        RegExp(r'^[A-Z2-7]+$').hasMatch(input);
   }
 }
 
 // ─── Providers ────────────────────────────────────────────────────────────────
 
-final walletProvider = StateNotifierProvider<WalletNotifier, WalletState>((
-  ref,
-) {
+final walletProvider = StateNotifierProvider<WalletNotifier, WalletState>((ref) {
   return WalletNotifier();
 });
 
-final usdcBalanceProvider = Provider<double>(
-  (ref) => ref.watch(walletProvider).usdcBalance,
-);
-final xlmBalanceProvider = Provider<double>(
-  (ref) => ref.watch(walletProvider).xlmBalance,
-);
-final xlmPriceProvider = Provider<double>(
-  (ref) => ref.watch(walletProvider).xlmPriceUSD,
-);
-final walletAddressProvider = Provider<String?>(
-  (ref) => ref.watch(walletProvider).stellarAddress,
-);
-final dayfiUsernameProvider = Provider<String?>(
-  (ref) => ref.watch(walletProvider).dayfiUsername,
-);
+// Convenience providers
+final usdcBalanceProvider   = Provider<double>((ref) => ref.watch(walletProvider).usdcBalance);
+final xlmBalanceProvider    = Provider<double>((ref) => ref.watch(walletProvider).xlmBalance);
+final eurcBalanceProvider   = Provider<double>((ref) => ref.watch(walletProvider).eurcBalance);
+final pyusdBalanceProvider  = Provider<double>((ref) => ref.watch(walletProvider).pyusdBalance);
+final benjiBalanceProvider  = Provider<double>((ref) => ref.watch(walletProvider).benjiBalance);
+final usdyBalanceProvider   = Provider<double>((ref) => ref.watch(walletProvider).usdyBalance);
+final wtgoldBalanceProvider = Provider<double>((ref) => ref.watch(walletProvider).wtgoldBalance);
+final xlmPriceProvider      = Provider<double>((ref) => ref.watch(walletProvider).xlmPriceUSD);
+final walletAddressProvider = Provider<String?>((ref) => ref.watch(walletProvider).stellarAddress);
+final dayfiUsernameProvider = Provider<String?>((ref) => ref.watch(walletProvider).dayfiUsername);

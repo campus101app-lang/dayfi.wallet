@@ -185,7 +185,7 @@ export async function sendPaymentSentEmail(email, recipientUsername, amount, ass
       <td style="padding:28px 32px 8px;text-align:center;">
         <p style="color:#888888;font-size:13px;font-family:'Inter',sans-serif;margin-bottom:6px;">Payment sent</p>
         <h2 style="color:#ffffff;font-size:22px;font-weight:600;font-family:'Inter',sans-serif;letter-spacing:-0.5px;margin-bottom:28px;">
-          Sent successfully ✓
+          Sent successfully
         </h2>
         ${card(`
           <p style="color:#888888;font-size:11px;font-family:'Inter',sans-serif;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">To</p>

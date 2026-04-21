@@ -47,31 +47,18 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
   // ─── Balance helpers ──────────────────────────────────────
 
   double _balanceFor(String asset) {
-    final w = ref.read(walletProvider);
-    switch (asset) {
-      case 'USDC':
-        return w.usdcBalance;
-      case 'XLM':
-        return w.xlmBalance;
-      default:
-        return 0;
-    }
+    return ref.read(walletProvider).balanceFor(asset);
   }
 
-  // XLM: reserve 2.0 for multi-hop swaps (0.5 base + 0.5 USDC trustline + 0.5-1.0 for path intermediates)
-  // USDC: no reserve needed
-  // Fee: negligible (~0.00001 XLM per operation)
   double _availableFor(String asset) {
     final balance = _balanceFor(asset);
     if (asset == 'XLM') {
-      // Reserve 2.0 XLM minimum to handle multi-hop swap paths with intermediate assets
+      // Reserve 2.0 XLM minimum for multi-hop swap paths
       return (balance - 2.0).clamp(0, double.infinity);
     }
-    // USDC: can use full balance (fee is paid in XLM)
     return balance;
   }
 
-  // Estimate swap fee in XLM (Stellar base fee is ~1 stroop = 0.00001 XLM)
   double _estimatedFeeXLM() => 0.00001;
 
   bool get _hasInsufficientBalance {
@@ -397,9 +384,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
               height: 120,
               repeat: false,
             ),
-
             const SizedBox(height: 4),
-
             Text(
               'Swap Complete!',
               style: Theme.of(context).textTheme.displaySmall?.copyWith(

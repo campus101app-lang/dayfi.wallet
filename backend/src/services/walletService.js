@@ -21,29 +21,74 @@ const networkPassphrase = isTestnet
   ? StellarSdk.Networks.TESTNET
   : StellarSdk.Networks.PUBLIC;
 
+// ─── Issuer Validation Helper ────────────────────────────────────────────────
+// Prevents the "Issuer is invalid" crash by ensuring the string is a
+// valid Stellar G-address (56 chars) before passing it to the SDK.
+const isValidAddress = (addr) => {
+  if (typeof addr !== "string") return false;
+  const cleanAddr = addr.replace(/[\n\r\s\t]/g, ""); // Strips newlines, returns, spaces, tabs
+  return /^G[A-Z0-9]{55}$/.test(cleanAddr);
+};
+
 // ─── Issuers ──────────────────────────────────────────────────────────────────
 
 export const ISSUERS = {
-  USDC:
-    process.env.USDC_ISSUER ||
-    (isTestnet
-      ? "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
-      : "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
-  // TODO: Fix GOLD issuer - currently invalid
-  // GOLD:
-  //   process.env.GOLD_ISSUER ||
-  //   (isTestnet
-  //     ? "GDPJALI4AZKUU2W426U5WKMAT6CN3AJRPIIRYR2YM54TL2GDWO5O2MZM"
-  //     : "GDBE77Z976GZ66WQSBCYI3S7A67T5OVCB57FPR35CCV72L7DQXNGA476"),
+  USDC: isValidAddress(process.env.USDC_ISSUER)
+    ? process.env.USDC_ISSUER
+    : "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+
+  EURC: isValidAddress(process.env.EURC_ISSUER)
+    ? process.env.EURC_ISSUER
+    : "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y2IEMFDVXBSDP6SJY4ITNPP",
+
+  PYUSD: isValidAddress(process.env.PYUSD_ISSUER)
+    ? process.env.PYUSD_ISSUER
+    : "GDQE7IXJ4HUHV6RQHIUPRJSEZE4DRS5WY577O2FY6YQ5LVWZ7JZTU2V5",
+
+  BENJI: isValidAddress(process.env.BENJI_ISSUER)
+    ? process.env.BENJI_ISSUER
+    : "GBHNGLLIE3KWGKCHIKMHJ5HVZHYIK7WTBE4QF5PLAKL4CJGSEU7HZIW5",
+
+  USDY: isValidAddress(process.env.USDY_ISSUER)
+    ? process.env.USDY_ISSUER
+    : "GAJMPX5NBOG6TQFPQGRABJEEB2YE7RFRLUKJDZAZGAD5GFX4J7TADAZ6",
+
+  WTGOLD: isValidAddress(process.env.WTGOLD_ISSUER)
+    ? process.env.WTGOLD_ISSUER
+    : "GAGMKQSAJBRDSVKZFBHRWWQDLT2QNDZ5ZGZF63QNSYDNQ6XFZEWSHKI",
+};
+
+// ─── Asset Objects ────────────────────────────────────────────────────────────
+
+const safeAsset = (code, issuer) => {
+  if (!isValidAddress(issuer)) {
+    console.error(
+      `❌ CRITICAL: ${code}_ISSUER is invalid! Using XLM fallback to prevent crash.`,
+    );
+    return StellarSdk.Asset.native();
+  }
+  return new StellarSdk.Asset(code, issuer);
 };
 
 export const ASSETS = {
-  USDC: new StellarSdk.Asset("USDC", ISSUERS.USDC),
-  // GOLD: new StellarSdk.Asset("GOLD", ISSUERS.GOLD),
+  USDC: safeAsset("USDC", ISSUERS.USDC),
+  EURC: safeAsset("EURC", ISSUERS.EURC),
+  PYUSD: safeAsset("PYUSD", ISSUERS.PYUSD),
+  BENJI: safeAsset("BENJI", ISSUERS.BENJI),
+  USDY: safeAsset("USDY", ISSUERS.USDY),
+  WTGOLD: safeAsset("WTGOLD", ISSUERS.WTGOLD),
   XLM: StellarSdk.Asset.native(),
 };
 
-export const SUPPORTED_ASSETS = ["USDC", "XLM"]; // Temporarily removed GOLD
+export const SUPPORTED_ASSETS = [
+  "USDC",
+  "XLM",
+  "EURC",
+  "PYUSD",
+  "BENJI",
+  "USDY",
+  "WTGOLD",
+];
 
 // ─── Encryption ───────────────────────────────────────────────────────────────
 
@@ -83,7 +128,6 @@ export async function setupUserTrustlines(user) {
     );
     return false;
   }
-
   try {
     const secret = decrypt(user.stellarSecretKey);
     const keypair = StellarSdk.Keypair.fromSecret(secret);
@@ -130,35 +174,57 @@ export async function createStellarWallet() {
 }
 
 // ─── Trustlines ───────────────────────────────────────────────────────────────
+// Batches all trustlines into a single transaction.
+// Skips any that already exist so this is safe to call repeatedly.
+// Each non-native trustline costs 0.5 XLM reserve — 6 assets = 3 XLM extra
+// reserve on top of the base 0.5 XLM, so wallets need ~4 XLM to be comfortable.
 
 export async function addAllTrustlines(keypair) {
   try {
     const account = await server.loadAccount(keypair.publicKey());
+
+    const existingCodes = new Set(
+      account.balances
+        .filter((b) => b.asset_type !== "native")
+        .map((b) => b.asset_code),
+    );
+
+    // Non-native assets needing trustlines
+    const trustlineAssets = [
+      { asset: ASSETS.USDC, limit: "1000000" },
+      { asset: ASSETS.EURC, limit: "1000000" },
+      { asset: ASSETS.PYUSD, limit: "1000000" },
+      { asset: ASSETS.BENJI, limit: "100000" },
+      { asset: ASSETS.USDY, limit: "100000" },
+      { asset: ASSETS.WTGOLD, limit: "10000" },
+    ];
+
+    const missing = trustlineAssets.filter(
+      ({ asset }) => !existingCodes.has(asset.code),
+    );
+
+    if (missing.length === 0) {
+      console.log(`ℹ️  All trustlines already exist for ${keypair.publicKey()}`);
+      return null;
+    }
+
     const txBuilder = new StellarSdk.TransactionBuilder(account, {
-      fee: StellarSdk.BASE_FEE,
+      fee: String(parseInt(StellarSdk.BASE_FEE) * missing.length),
       networkPassphrase,
     });
 
-    // Add trustlines for all supported assets
-    txBuilder
-      .addOperation(
-        StellarSdk.Operation.changeTrust({
-          asset: ASSETS.USDC,
-          limit: "1000000",
-        }),
-      )
-      // TODO: Add GOLD trustline back once issuer is fixed
-      // .addOperation(
-      //   StellarSdk.Operation.changeTrust({
-      //     asset: ASSETS.GOLD,
-      //     limit: "1000000",
-      //   })
-      // )
-      .setTimeout(30);
+    for (const { asset, limit } of missing) {
+      txBuilder.addOperation(
+        StellarSdk.Operation.changeTrust({ asset, limit }),
+      );
+    }
 
-    const tx = txBuilder.build();
+    const tx = txBuilder.setTimeout(30).build();
     tx.sign(keypair);
     const result = await server.submitTransaction(tx);
+    console.log(
+      `✅ Added ${missing.length} trustline(s): ${missing.map((m) => m.asset.code).join(", ")}`,
+    );
     return result;
   } catch (err) {
     console.error("Trustline error:", err.message);
@@ -180,41 +246,87 @@ export async function getWalletBalances(publicKey) {
       headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
     });
 
-    if (res.status === 404) return { USDC: 0, XLM: 0 };
+    if (res.status === 404) {
+      return {
+        USDC: 0,
+        XLM: 0,
+        EURC: 0,
+        PYUSD: 0,
+        BENJI: 0,
+        USDY: 0,
+        WTGOLD: 0,
+      };
+    }
+
     const account = await res.json();
-    const balances = { USDC: 0, XLM: 0 };
+    const balances = {
+      USDC: 0,
+      XLM: 0,
+      EURC: 0,
+      PYUSD: 0,
+      BENJI: 0,
+      USDY: 0,
+      WTGOLD: 0,
+    };
 
     for (const b of account.balances) {
       if (b.asset_type === "native") {
         balances.XLM = parseFloat(b.balance);
       } else if (b.asset_code === "USDC" && b.asset_issuer === ISSUERS.USDC) {
         balances.USDC = parseFloat(b.balance);
+      } else if (b.asset_code === "EURC" && b.asset_issuer === ISSUERS.EURC) {
+        balances.EURC = parseFloat(b.balance);
+      } else if (b.asset_code === "PYUSD" && b.asset_issuer === ISSUERS.PYUSD) {
+        balances.PYUSD = parseFloat(b.balance);
+      } else if (b.asset_code === "BENJI" && b.asset_issuer === ISSUERS.BENJI) {
+        balances.BENJI = parseFloat(b.balance);
+      } else if (b.asset_code === "USDY" && b.asset_issuer === ISSUERS.USDY) {
+        balances.USDY = parseFloat(b.balance);
+      } else if (
+        b.asset_code === "WTGOLD" &&
+        b.asset_issuer === ISSUERS.WTGOLD
+      ) {
+        balances.WTGOLD = parseFloat(b.balance);
       }
-      // TODO: Add GOLD balance tracking back once issuer is fixed
-      // else if (b.asset_code === "GOLD" && b.asset_issuer === ISSUERS.GOLD) {
-      //   balances.GOLD = parseFloat(b.balance);
-      // }
     }
+
     return balances;
   } catch (err) {
-    return { USDC: 0, XLM: 0 };
+    return { USDC: 0, XLM: 0, EURC: 0, PYUSD: 0, BENJI: 0, USDY: 0, WTGOLD: 0 };
   }
 }
 
 // ─── Live prices ─────────────────────────────────────────────────────────────
+// BENJI ≈ $1 (money market fund, stable NAV)
+// USDY  ≈ $1 (yield-bearing stable dollar)
+// EURC  tracked via EUR/USD rate
+// WTGOLD tracked via gold price per troy oz
 
 async function getLivePrices() {
   try {
     const res = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=usd-coin,stellar&vs_currencies=usd",
+      "https://api.coingecko.com/api/v3/simple/price?ids=usd-coin,stellar,euro-coin,paypal-usd,wrapped-steth&vs_currencies=usd",
     );
     const data = await res.json();
     return {
       XLM: data["stellar"]?.usd ?? 0.169,
       USDC: data["usd-coin"]?.usd ?? 1.0,
+      EURC: data["euro-coin"]?.usd ?? 1.08, // EUR/USD approx
+      PYUSD: data["paypal-usd"]?.usd ?? 1.0,
+      BENJI: 1.0, // Stable NAV — always $1
+      USDY: 1.0, // Yield-bearing but pegged to $1
+      WTGOLD: parseFloat(process.env.WTGOLD_PRICE_USD || "3200"), // ~troy oz price, update via env
     };
   } catch {
-    return { XLM: 0.169, USDC: 1.0 };
+    return {
+      XLM: 0.169,
+      USDC: 1.0,
+      EURC: 1.08,
+      PYUSD: 1.0,
+      BENJI: 1.0,
+      USDY: 1.0,
+      WTGOLD: 3200,
+    };
   }
 }
 
@@ -321,7 +433,6 @@ export async function sendAsset(
 
   await prisma.transaction.create({ data: txData });
 
-  // Record receive transaction for recipient (if it's a dayfi user)
   if (destinationUsername) {
     const recipient = await prisma.user.findUnique({
       where: { username: destinationUsername },
@@ -345,9 +456,7 @@ export async function sendAsset(
     }
   }
 
-  // Send confirmation emails
   try {
-    // Email to sender
     await sendPaymentSentEmail(
       sender.email,
       destinationUsername || destinationPublicKey,
@@ -355,8 +464,6 @@ export async function sendAsset(
       assetCode,
       memo,
     );
-
-    // Email to recipient (if it's a dayfi user)
     if (destinationUsername) {
       const recipient = await prisma.user.findUnique({
         where: { username: destinationUsername },
@@ -395,19 +502,16 @@ export async function swapAssets(
   );
   const account = await server.loadAccount(sender.stellarPublicKey);
 
-  // Log account state for debugging
   const xlmBalance = parseFloat(
     account.balances.find((b) => !b.asset_type || b.asset_type === "native")
       ?.balance || "0",
   );
   const numTrustlines = account.balances.filter(
-    (b) => b.asset_type === "credit",
+    (b) => b.asset_type !== "native",
   ).length;
+
   console.log(
     `📋 Account state: Sequence=${account.sequenceNumber()}, XLM=${xlmBalance}, Trustlines=${numTrustlines}`,
-  );
-  console.log(
-    `   Balances: ${account.balances.map((b) => `${b.balance} ${b.asset_code || "XLM"}`).join(" | ")}`,
   );
 
   const sendAsset =
@@ -415,14 +519,17 @@ export async function swapAssets(
   const destAsset =
     toAssetCode === "XLM" ? StellarSdk.Asset.native() : ASSETS[toAssetCode];
 
+  if (!sendAsset) throw new Error(`Unsupported asset: ${fromAssetCode}`);
+  if (!destAsset) throw new Error(`Unsupported asset: ${toAssetCode}`);
+
   console.log(
     `🔄 SWAP: Finding path ${fromAssetCode} (${amount}) -> ${toAssetCode}`,
   );
 
-  // 1. Get Path for destMin
   const paths = await server
     .strictSendPaths(sendAsset, amount.toString(), [destAsset])
     .call();
+
   if (!paths.records.length) {
     console.error(
       `❌ No liquidity path found: ${fromAssetCode} -> ${toAssetCode} for ${amount}`,
@@ -433,54 +540,30 @@ export async function swapAssets(
   const bestPath = paths.records[0];
   const destMin = (parseFloat(bestPath.destination_amount) * 0.98).toFixed(7);
 
-  // Extract the path assets (intermediate hops)
   const path = (bestPath.path || []).map((asset) => {
-    if (asset.asset_type === "native") {
-      return StellarSdk.Asset.native();
-    }
+    if (asset.asset_type === "native") return StellarSdk.Asset.native();
     return new StellarSdk.Asset(asset.asset_code, asset.asset_issuer);
   });
 
   console.log(
     `✅ Path found: ${path.length} hops, Will receive ~${bestPath.destination_amount} ${toAssetCode}`,
   );
-  if (path.length > 0) {
-    console.log(
-      `   Intermediate assets: ${path.map((a) => a.code || "XLM").join(" → ")}`,
-    );
-  }
 
-  // 2. Build & Submit
   const numOperations = 1;
   const totalFeeInStroops = numOperations * parseInt(StellarSdk.BASE_FEE);
-  const txFeeInXLM = totalFeeInStroops / 10000000; // Convert stroops to XLM
+  const txFeeInXLM = totalFeeInStroops / 10000000;
 
-  // Reserve calculation:
-  // - 0.5 XLM base reserve per entry (base account + each trustline)
-  // - So: 0.5 * (1 + numExistingTrustlines + numNewTrustlinesInPath)
-  // - Plus fee
-  // - Plus safety buffer
   const newTrustlinesNeeded = path.filter((p) => {
     const code = p.code || "XLM";
     return !account.balances.some((b) => (b.asset_code || "XLM") === code);
   }).length;
 
   const totalReserveNeeded = 0.5 * (1 + numTrustlines + newTrustlinesNeeded);
-  const minXLMRequired = totalReserveNeeded + txFeeInXLM + 0.1; // Add buffer
-
-  console.log(
-    `💰 Fee: ${txFeeInXLM} XLM, Trustlines: ${numTrustlines} existing + ${newTrustlinesNeeded} new`,
-  );
-  console.log(
-    `🔐 Reserve needed: 0.5 × (1 + ${numTrustlines} + ${newTrustlinesNeeded}) = ${totalReserveNeeded.toFixed(8)} XLM`,
-  );
-  console.log(
-    `   Min total needed: ${minXLMRequired.toFixed(8)} XLM, Have: ${xlmBalance.toFixed(8)} XLM`,
-  );
+  const minXLMRequired = totalReserveNeeded + txFeeInXLM + 0.1;
 
   if (xlmBalance < minXLMRequired) {
     throw new Error(
-      `Insufficient XLM for swap with this path. Need: ${minXLMRequired.toFixed(8)} XLM (${newTrustlinesNeeded} new trustlines × 0.5 + fee), Have: ${xlmBalance.toFixed(8)} XLM. Try swapping a smaller amount or get more XLM.`,
+      `Insufficient XLM for swap. Need: ${minXLMRequired.toFixed(8)} XLM, Have: ${xlmBalance.toFixed(8)} XLM.`,
     );
   }
 
@@ -495,7 +578,7 @@ export async function swapAssets(
         destination: sender.stellarPublicKey,
         destAsset,
         destMin,
-        path, // Use the actual path from strictSendPaths
+        path,
       }),
     )
     .setTimeout(30)
@@ -507,7 +590,6 @@ export async function swapAssets(
   try {
     result = await server.submitTransaction(tx);
   } catch (horizonErr) {
-    // Stellar rejected the transaction - log detailed error
     const horizonResponse = horizonErr.response?.data;
     console.error(
       `❌ STELLAR REJECTED: ${horizonResponse?.title || "Unknown Error"}`,
@@ -516,20 +598,16 @@ export async function swapAssets(
       "Stellar extras:",
       JSON.stringify(horizonResponse?.extras || {}, null, 2),
     );
-
-    // Re-throw with more context
     if (horizonResponse?.extras?.result_codes) {
       const codes = horizonResponse.extras.result_codes;
-      const txCode = codes.transaction;
-      const opCodes = codes.operations || [];
       throw new Error(
-        `Stellar rejected: tx_code=${txCode}, op_codes=[${opCodes.join(", ")}]`,
+        `Stellar rejected: tx_code=${codes.transaction}, op_codes=[${(codes.operations || []).join(", ")}]`,
       );
     }
     throw horizonErr;
   }
 
-  // ✅ THE FIX: Decode XDR to get EXACT amount received
+  // Decode XDR to get exact received amount
   const resultXDR = StellarSdk.xdr.TransactionResult.fromXDR(
     result.result_xdr,
     "base64",
@@ -543,17 +621,14 @@ export async function swapAssets(
     .last()
     .amount()
     .toString();
-  // Convert stroops to XLM/USDC (1 unit = 10^7 stroops)
   const actualReceived = parseFloat(actualReceivedRaw) / 10000000;
 
   console.log(
     `✅ Swap submitted: Hash ${result.hash} | Received: ${actualReceived} ${toAssetCode}`,
   );
 
-  // 3. Record BOTH LEGS of the swap in DB with shared swapId
   const swapId = `swap_${result.hash}_${Date.now()}`;
 
-  // Outgoing leg (e.g., send USDC)
   await prisma.transaction.create({
     data: {
       userId: fromUserId,
@@ -573,7 +648,6 @@ export async function swapAssets(
     },
   });
 
-  // Incoming leg (e.g., receive XLM)
   await prisma.transaction.create({
     data: {
       userId: fromUserId,
@@ -593,7 +667,6 @@ export async function swapAssets(
     },
   });
 
-  // Send swap confirmation email
   try {
     await sendSwapCompleteEmail(
       sender.email,
@@ -668,14 +741,10 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
   }
 
   try {
-    // Decrypt the master wallet secret key
     const masterSecret = decrypt(masterSecretEncrypted);
     const masterKeypair = StellarSdk.Keypair.fromSecret(masterSecret);
-
-    // Get master account
     const masterAccount = await server.loadAccount(masterPublicKey);
 
-    // Check if destination account exists
     let destExists = true;
     try {
       await server.loadAccount(userPublicKey);
@@ -689,7 +758,6 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
     });
 
     if (!destExists) {
-      // Create account with initial balance
       txBuilder.addOperation(
         StellarSdk.Operation.createAccount({
           destination: userPublicKey,
@@ -697,7 +765,6 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
         }),
       );
     } else {
-      // Account exists, just send XLM
       txBuilder.addOperation(
         StellarSdk.Operation.payment({
           destination: userPublicKey,
@@ -713,7 +780,6 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
 
     console.log(`✅ Funded ${userPublicKey} with ${fundingAmount} XLM`);
 
-    // Record transaction if userId is provided
     if (userId) {
       await prisma.transaction.create({
         data: {
@@ -729,13 +795,11 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
           memo: "Initial account funding",
         },
       });
-      console.log(`📝 Recorded funding transaction for user ${userId}`);
     }
 
     return result;
   } catch (err) {
     console.error("❌ Auto-funding failed:", err.message);
-    // Don't throw — allow user creation to succeed even if funding fails
     return null;
   }
 }
@@ -750,34 +814,23 @@ export async function sendFromMasterWallet(
   const masterPublicKey = process.env.MASTER_WALLET_PUBLIC_KEY;
   const masterSecretEncrypted = process.env.MASTER_WALLET_SECRET_KEY;
 
-  if (!masterPublicKey || !masterSecretEncrypted) {
+  if (!masterPublicKey || !masterSecretEncrypted)
     throw new Error("Master wallet not configured");
-  }
 
-  // Validate amount
   const amountNum = parseFloat(amount);
-  if (isNaN(amountNum) || amountNum <= 0) {
-    throw new Error("Invalid amount");
-  }
-
-  // Validate recipient address
+  if (isNaN(amountNum) || amountNum <= 0) throw new Error("Invalid amount");
   if (
     !recipientAddress ||
     recipientAddress.length !== 56 ||
     !recipientAddress.startsWith("G")
-  ) {
+  )
     throw new Error("Invalid recipient address");
-  }
 
   try {
-    // Decrypt the master wallet secret key
     const masterSecret = decrypt(masterSecretEncrypted);
     const masterKeypair = StellarSdk.Keypair.fromSecret(masterSecret);
-
-    // Get master account
     const masterAccount = await server.loadAccount(masterPublicKey);
 
-    // Verify recipient exists
     try {
       await server.loadAccount(recipientAddress);
     } catch {
@@ -797,9 +850,7 @@ export async function sendFromMasterWallet(
       }),
     );
 
-    if (memo) {
-      txBuilder.addMemo(StellarSdk.Memo.text(memo));
-    }
+    if (memo) txBuilder.addMemo(StellarSdk.Memo.text(memo));
 
     const tx = txBuilder.setTimeout(30).build();
     tx.sign(masterKeypair);
@@ -819,14 +870,13 @@ export async function sendFromMasterWallet(
   }
 }
 
-// ─── Sync blockchain transactions (optional, for external transfers) ──────────
+// ─── Sync blockchain transactions ──────────────────────────────────────────
 
 export async function syncBlockchainTransactions(userId) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.stellarPublicKey) throw new Error("User has no Stellar wallet");
 
   try {
-    // Get recent transactions from Stellar
     const page = await server
       .transactions()
       .forAccount(user.stellarPublicKey)
@@ -835,29 +885,24 @@ export async function syncBlockchainTransactions(userId) {
       .call();
 
     let synced = 0;
-
     for (const tx of page.records) {
-      // Skip if already in database
       const existing = await prisma.transaction.findUnique({
         where: { stellarTxHash: tx.hash },
       });
       if (existing) continue;
 
-      // Process operations in the transaction
       const ops = tx.operations();
       for (const op of ops) {
         if (
           op.type_code === "payment" ||
           op.type_code === "path_payment_strict_send"
         ) {
-          // Only record transactions TO this user
           if (
             op.to === user.stellarPublicKey ||
             op.destination === user.stellarPublicKey
           ) {
             const amount = parseFloat(op.amount || op.send_amount || 0);
             if (amount > 0) {
-              // Determine asset
               let asset = "XLM";
               if (
                 op.asset_type === "credit_alphanum4" ||
@@ -865,37 +910,6 @@ export async function syncBlockchainTransactions(userId) {
               ) {
                 asset = op.asset_code || "UNKNOWN";
               }
-
-              // For path payments, extract the received amount
-              let receivedAmount = amount;
-              if (op.type_code === "path_payment_strict_send") {
-                // Could be a swap - try to get more details
-                const opDetails = await server.operationDetail(op.id).call();
-                if (opDetails && opDetails.body_details) {
-                  // This is a swap
-                  await prisma.transaction.create({
-                    data: {
-                      userId,
-                      type: "swap",
-                      status: "confirmed",
-                      amount: parseFloat(op.send_amount || 0),
-                      asset: op.send_asset_code || "XLM",
-                      network: "stellar",
-                      fromAddress: op.from,
-                      toAddress: user.stellarPublicKey,
-                      stellarTxHash: tx.hash,
-                      isSwap: true,
-                      swapFromAsset: op.send_asset_code || "XLM",
-                      swapToAsset: op.asset_code || "XLM",
-                      receivedAmount: parseFloat(op.amount || 0),
-                    },
-                  });
-                  synced++;
-                  continue;
-                }
-              }
-
-              // Regular receive transaction
               await prisma.transaction.create({
                 data: {
                   userId,
