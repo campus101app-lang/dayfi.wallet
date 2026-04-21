@@ -5,6 +5,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/auth_button.dart';
+import '../../widgets/app_background.dart';
 import 'dart:async';
 
 class OtpScreen extends StatefulWidget {
@@ -18,8 +20,10 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   bool _loading = false;
@@ -73,7 +77,10 @@ class _OtpScreenState extends State<OtpScreen> {
       final step = result['step'];
 
       if (step == 'setup_username') {
-        context.push('/auth/username', extra: {'setupToken': result['setupToken']});
+        context.push(
+          '/auth/username',
+          extra: {'setupToken': result['setupToken']},
+        );
       } else if (step == 'complete') {
         await apiService.saveToken(result['token']);
         context.go('/home');
@@ -106,15 +113,15 @@ class _OtpScreenState extends State<OtpScreen> {
       await apiService.sendOtp(widget.email);
       _startCountdown();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('New code sent!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('New code sent!')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(apiService.parseError(e))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(apiService.parseError(e))));
       }
     } finally {
       if (mounted) setState(() => _resending = false);
@@ -128,15 +135,17 @@ class _OtpScreenState extends State<OtpScreen> {
         _controllers[i].text = value[i];
       }
       _focusNodes[5].requestFocus();
-      _verify();
       return;
     }
 
     if (value.isNotEmpty && index < 5) {
       _focusNodes[index + 1].requestFocus();
     }
+  }
 
-    if (_otp.length == 6) _verify();
+  void _clearField(int index) {
+    _controllers[index].clear();
+    _focusNodes[index].requestFocus();
   }
 
   void _onKeyPressed(int index, RawKeyEvent event) {
@@ -156,70 +165,105 @@ class _OtpScreenState extends State<OtpScreen> {
       '***',
     );
 
-    return Scaffold(
+    return AppBackground(
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 24),
-              GestureDetector(
-                onTap: () => context.pop(),
-                child: const Icon(Icons.arrow_back_ios, size: 20),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () => context.pop(),
+                  child: const Icon(Icons.arrow_back_ios, size: 20),
+                ),
               ),
-              const Spacer(flex: 2),
+              const Spacer(flex: 1),
 
               Text(
-                'Enter the\n6-digit code',
-                style: Theme.of(context).textTheme.displaySmall,
-              ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.3, end: 0),
-
-              const SizedBox(height: 12),
+                'Enter the 6-digit code',
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: -1,
+                  height: 1.09,
+                ),
+                textAlign: TextAlign.center,
+              ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
+              const SizedBox(height: 18),
 
               Text(
                 'Enter the code we\'ve sent to $masked',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ).animate().fadeIn(delay: 100.ms),
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontSize: 17,
+                  letterSpacing: -.5,
+                  height: 1.3,
+                  color: Theme.of(context).textTheme.bodyMedium?.color!,
+                ),
+                textAlign: TextAlign.center,
+              ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
 
               // OTP boxes
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(6, (i) {
                   return SizedBox(
-                    width: 48,
-                    height: 60,
-                    child: RawKeyboardListener(
-                      focusNode: FocusNode(),
-                      onKey: (e) => _onKeyPressed(i, e),
-                      child: TextFormField(
-                        controller: _controllers[i],
-                        focusNode: _focusNodes[i],
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        maxLength: i == 0 ? 6 : 1,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        style: Theme.of(context).textTheme.headlineMedium,
-                        decoration: InputDecoration(
-                          counterText: '',
-                          contentPadding: EdgeInsets.zero,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                    width: 50,
+                    // height: 60,
+                    child: GestureDetector(
+                      onTap: () => _clearField(i),
+                      child: RawKeyboardListener(
+                        focusNode: FocusNode(),
+                        onKey: (e) => _onKeyPressed(i, e),
+                        child: TextFormField(
+                          controller: _controllers[i],
+                          focusNode: _focusNodes[i],
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          maxLength: i == 0 ? 6 : 1,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          style: Theme.of(context).textTheme.headlineMedium,
+                          decoration: InputDecoration(
+                            counterText: '',
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.05),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.05),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.05),
+                              ),
                             ),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 2,
-                            ),
-                          ),
+                          onChanged: (v) => _onChanged(i, v),
                         ),
-                        onChanged: (v) => _onChanged(i, v),
                       ),
                     ),
                   );
@@ -240,18 +284,25 @@ class _OtpScreenState extends State<OtpScreen> {
                         onTap: _resendCountdown == 0 ? _resend : null,
                         child: Text.rich(
                           TextSpan(
-                            text: 'Didn\'t get the code? Request a new one in ',
+                            text: _resendCountdown > 0
+                                ? 'Didn\'t get the code? Request a new one in '
+                                : 'Didn\'t get the code? ',
                             style: Theme.of(context).textTheme.bodySmall,
                             children: [
                               TextSpan(
                                 text: _resendCountdown > 0
                                     ? '00:${_resendCountdown.toString().padLeft(2, '0')}'
                                     : 'Resend',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      fontWeight: FontWeight.w700,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
                                       color: _resendCountdown == 0
-                                          ? Theme.of(context).colorScheme.primary
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
                                           : null,
+                                      letterSpacing: -.1,
+                                      fontSize: 12,
                                     ),
                               ),
                             ],
@@ -263,15 +314,12 @@ class _OtpScreenState extends State<OtpScreen> {
 
               const Spacer(flex: 3),
 
-              ElevatedButton(
-                onPressed: _loading || _otp.length < 6 ? null : _verify,
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                      )
-                    : const Text('Continue'),
+              AuthButton(
+                label: 'Continue',
+                onPressed: _otp.length == 6 ? _verify : null,
+                isLoading: _loading,
+                loadingText: 'Verifying...',
+                isValid: _otp.length == 6,
               ),
 
               const SizedBox(height: 32),
@@ -279,6 +327,7 @@ class _OtpScreenState extends State<OtpScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

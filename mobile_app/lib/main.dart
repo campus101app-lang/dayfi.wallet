@@ -23,16 +23,20 @@ Future<void> _initFirebase(WidgetRef ref) async {
   await messaging.requestPermission(alert: true, badge: true, sound: true);
   final token = await messaging.getToken();
   if (token != null) {
-    await ref.read(userNotifierProvider.notifier).registerDeviceToken(
-      token,
-      defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
-    );
+    await ref
+        .read(userNotifierProvider.notifier)
+        .registerDeviceToken(
+          token,
+          defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+        );
   }
   messaging.onTokenRefresh.listen((newToken) {
-    ref.read(userNotifierProvider.notifier).registerDeviceToken(
-      newToken,
-      defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
-    );
+    ref
+        .read(userNotifierProvider.notifier)
+        .registerDeviceToken(
+          newToken,
+          defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+        );
   });
   FirebaseMessaging.onMessage.listen((msg) {
     debugPrint('FCM foreground: ${msg.notification?.title}');
@@ -53,7 +57,7 @@ class DayFiApp extends ConsumerStatefulWidget {
 
 class _DayFiAppState extends ConsumerState<DayFiApp>
     with WidgetsBindingObserver {
-  final _auth   = LocalAuthentication();
+  final _auth = LocalAuthentication();
   bool _blurred = false;
   bool _authenticating = false;
 
@@ -62,7 +66,11 @@ class _DayFiAppState extends ConsumerState<DayFiApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try { await _initFirebase(ref); } catch (e) { debugPrint('Firebase: $e'); }
+      try {
+        await _initFirebase(ref);
+      } catch (e) {
+        debugPrint('Firebase: $e');
+      }
       // Authenticate on first open if Face ID enabled and token valid
       await _tryAuthenticate();
     });
@@ -99,7 +107,10 @@ class _DayFiAppState extends ConsumerState<DayFiApp>
     try {
       final ok = await _auth.authenticate(
         localizedReason: 'Authenticate to open DayFi',
-        options: const AuthenticationOptions(biometricOnly: true, stickyAuth: true),
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
       );
       if (mounted) setState(() => _blurred = !ok);
     } catch (_) {
@@ -127,20 +138,34 @@ class _DayFiAppState extends ConsumerState<DayFiApp>
             if (_blurred)
               GestureDetector(
                 onTap: _tryAuthenticate,
-                child: Container(
-                  color: Colors.black.withOpacity(0.95),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.face_retouching_natural,
-                            size: 64, color: Colors.white),
-                        const SizedBox(height: 20),
-                        Text('Tap to unlock',
-                            style: TextStyle(
+                child: Scaffold(
+                  body: Container(
+                    color: Colors.black.withOpacity(0.95),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.face_retouching_natural,
+                            size: 64,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: 250,
+                            child: Text(
+                              'Tap to unlock',
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
                                 color: Colors.white.withOpacity(0.7),
-                                fontSize: 16)),
-                      ],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
