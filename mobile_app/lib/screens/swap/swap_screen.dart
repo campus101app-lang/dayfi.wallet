@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
+import 'package:mobile_app/widgets/app_bottomsheet.dart';
 import '../../models/asset.dart';
 import '../../providers/wallet_provider.dart';
 import '../../services/api_service.dart';
@@ -310,7 +312,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
 
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
-        _showSuccess(result, confirmed);
+        _showSwapSuccess(result, confirmed);
       }
     } catch (e, stack) {
       final errorMsg = apiService.parseError(e);
@@ -320,8 +322,6 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
         stackTrace: stack,
         name: 'SwapScreen.executeSwap',
       );
-      print('🔴 SWAP ERROR: $errorMsg');
-      print('Full error: $e');
 
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
@@ -370,58 +370,130 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
     if (_fromAmountController.text.isNotEmpty) _fetchQuote();
   }
 
-  void _showSuccess(Map<String, dynamic> result, bool confirmed) {
-    showModalBottomSheet(
+  void _showSwapSuccess(Map<String, dynamic> result, bool confirmed) {
+    showDayFiBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(32),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                color: DayFiColors.greenDim,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check,
-                color: DayFiColors.green,
-                size: 32,
-              ),
+            const SizedBox(height: 8),
+
+            // ── Lottie success ──────────────────────────────
+            Lottie.asset(
+              'assets/animations/success.json',
+              width: 120,
+              height: 120,
+              repeat: false,
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 4),
+
             Text(
               'Swap Complete!',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -1,
+                height: 1.1,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
+
             Text(
-              '${_fromAmountController.text} $_fromAsset → $_toAsset\nStellar DEX · ${confirmed ? 'Confirmed' : 'Processing'}',
-              style: Theme.of(context).textTheme.bodyMedium,
+              '${_fromAmountController.text} $_fromAsset → $_toAsset',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontSize: 17,
+                letterSpacing: -.5,
+                height: 1.3,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 4),
+
+            // Confirmed / Processing badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: (confirmed
+                    ? DayFiColors.greenDim
+                    : DayFiColors.textMuted.withOpacity(0.15)),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: confirmed
+                      ? DayFiColors.green.withOpacity(0.25)
+                      : DayFiColors.textMuted.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    confirmed
+                        ? Icons.check_circle_outline_rounded
+                        : Icons.access_time_rounded,
+                    size: 12,
+                    color: confirmed
+                        ? DayFiColors.green
+                        : DayFiColors.textSecondary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Stellar DEX · ${confirmed ? 'Confirmed' : 'Processing'}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: confirmed
+                          ? DayFiColors.green
+                          : DayFiColors.textSecondary,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             if (result['transaction']?['hash'] != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 'Tx: ${(result['transaction']['hash'] as String).substring(0, 12)}...',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(letterSpacing: 0.2),
               ),
             ],
+
             const SizedBox(height: 32),
-            ElevatedButton(
+
+            // ── Done button ─────────────────────────────────
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(MediaQuery.of(context).size.width, 50),
+                side: BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(.90),
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: () {
-                Navigator.pop(ctx);
+                Navigator.pop(context);
                 context.go('/home');
               },
-              child: const Text('Done'),
-            ),
-            const SizedBox(height: 16),
+              child: Text(
+                'Done',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(.95),
+                  fontSize: 15,
+                ),
+              ),
+            ).animate().fadeIn(delay: 500.ms),
           ],
         ),
       ),
@@ -478,7 +550,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Instant swaps via Stellar DEX.\nMinimal fees, settled in seconds.',
+                    'Instant swaps via Stellar DEX.\nSettled in seconds.',
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       fontSize: 14,
                       letterSpacing: -.1,
@@ -491,38 +563,26 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
 
                 // Empty wallet warning
                 if (walletEmpty)
-
-                Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  SvgPicture.asset(
-                                    "assets/icons/svgs/alert2.svg",
-                                    color: const Color.fromARGB(
-                                      255,
-                                      232,
-                                      172,
-                                      9,
-                                    ),
-                                    height: 16,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Your wallet has no funds to swap.',
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: const Color.fromARGB(
-                                            255,
-                                            232,
-                                            172,
-                                            9,
-                                          ),
-                                          fontSize: 14,
-                                          letterSpacing: -0.2,
-                                        ),
-                                  ),
-                                ],
-                              ).animate().fadeIn(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SvgPicture.asset(
+                        "assets/icons/svgs/alert2.svg",
+                        color: const Color.fromARGB(255, 232, 172, 9),
+                        height: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Your wallet has no funds to swap.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: const Color.fromARGB(255, 232, 172, 9),
+                          fontSize: 14,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ).animate().fadeIn(),
                 // FROM label
                 Text('You Pay', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 8),
@@ -951,13 +1011,13 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
 
   void _showAssetPicker({required bool isFrom}) {
     final excluded = isFrom ? _toAsset : _fromAsset;
-    showModalBottomSheet(
+    showDayFiBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
+      // backgroundColor: Theme.of(context).colorScheme.surface,
+      // shape: const RoundedRectangleBorder(
+      //   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      // ),
+      child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -974,7 +1034,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 GestureDetector(
-                  onTap: () => Navigator.pop(ctx),
+                  onTap: () => Navigator.pop(context),
                   child: const Icon(Icons.close),
                 ),
               ],
@@ -989,7 +1049,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                 onTap: isDisabled
                     ? null
                     : () {
-                        Navigator.pop(ctx);
+                        Navigator.pop(context);
                         setState(() {
                           if (isFrom)
                             _fromAsset = code;
@@ -1007,7 +1067,9 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(ctx).colorScheme.primary.withOpacity(0.08),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(14),
                     // border: Border.all(
                     //   color: isSelected

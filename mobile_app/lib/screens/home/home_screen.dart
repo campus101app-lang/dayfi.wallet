@@ -184,76 +184,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ).animate().fadeIn(duration: 500.ms);
   }
 
-  // ─── Total balance ───────────────────────────────────────
-
   Widget _buildTotalBalance(WalletState walletState) {
     final xlmPriceUSD = walletState.xlmPriceUSD ?? 0.0;
     const xlmReserve = 2.0;
     final reservedUSD = xlmReserve * xlmPriceUSD;
-    var total = walletState.totalUSD - reservedUSD;
 
-    // Clamp to 0 if negative and round to 2 decimal places
-    total = (total < 0 ? 0.0 : total);
-    total = double.parse(total.toStringAsFixed(2));
+    // ── Determine what value to actually display ──────────────
+    // Priority: live total → last known → dash (never show 0.00 falsely)
+    final rawTotal = walletState.totalUSD - reservedUSD;
+    final liveTotal = rawTotal < 0
+        ? 0.0
+        : double.parse(rawTotal.toStringAsFixed(2));
 
-    final wholePart = total.toInt().toString();
-    final decimalPart = total.toStringAsFixed(2).split('.')[1];
+    // Use last known if current fetch errored/offline and live is 0
+    final displayTotal =
+        (walletState.hasError || walletState.isOffline) && liveTotal == 0
+        ? walletState.lastKnownTotal
+        : liveTotal;
 
-    if (walletState.isLoading) {
+    final hasMeaningfulValue = displayTotal != null && displayTotal > 0;
+
+    // ── Loading spinner (first load only, no lastKnown yet) ───
+    if (walletState.isLoading && walletState.lastKnownTotal == null) {
       return Text(
         '\$—',
         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
           fontWeight: FontWeight.w400,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(.60),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(.40),
           letterSpacing: 0.4,
           fontSize: 28,
         ),
       );
     }
 
+    // ── Hidden balance ────────────────────────────────────────
     if (_balanceHidden) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      return _buildBalanceRow(context, '***', '.**', isHidden: true);
+    }
+
+    // ── Offline / error with no cached value → show dash + badge ─
+    if (!hasMeaningfulValue &&
+        (walletState.hasError || walletState.isOffline)) {
+      return Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Text(
-              '\$',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w400,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(.60),
-                letterSpacing: 0.4,
-                fontSize: 28,
-              ),
-            ),
-          ),
           Text(
-            '***',
+            '\$—',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontSize: 64,
               fontWeight: FontWeight.w400,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(.60),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(.40),
               letterSpacing: 0.4,
               height: .88,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              ".**",
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w400,
-                fontSize: 28,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(.60),
-                letterSpacing: 0.4,
-              ),
-            ),
-          ),
+          const SizedBox(height: 10),
+          _buildStatusBadge(walletState),
         ],
-      ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.05, end: 0);
+      ).animate().fadeIn(duration: 400.ms);
     }
 
+    // ── Normal display (with optional stale badge) ────────────
+    final total = displayTotal ?? 0.0;
+    final wholePart = total.toInt().toString();
+    final decimalPart = total.toStringAsFixed(2).split('.')[1];
+
+    return Column(
+      children: [
+        _buildBalanceRow(context, wholePart, '.$decimalPart'),
+
+        // Subtle "last known" badge when showing cached data
+        if ((walletState.hasError || walletState.isOffline) &&
+            hasMeaningfulValue) ...[
+          const SizedBox(height: 10),
+          _buildStatusBadge(walletState),
+        ],
+      ],
+    ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.05, end: 0);
+  }
+
+  // ─── Shared balance row renderer ────────────────────────────────────────────
+
+  Widget _buildBalanceRow(
+    BuildContext context,
+    String whole,
+    String decimal, {
+    bool isHidden = false,
+  }) {
+    final opacity = isHidden ? .40 : .85;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -271,11 +288,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         Text(
-          wholePart,
+          whole,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontSize: 64,
             fontWeight: FontWeight.w400,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(.85),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(opacity),
             letterSpacing: 0.4,
             height: .88,
           ),
@@ -283,11 +300,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Padding(
           padding: const EdgeInsets.only(top: 12),
           child: Text(
-            decimalPart,
+            decimal,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w400,
               fontSize: 28,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(.85),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withOpacity(opacity),
               letterSpacing: 0.4,
             ),
           ),
@@ -296,12 +315,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.05, end: 0);
   }
 
+  // ─── Status badge (offline / error) ─────────────────────────────────────────
+
+  Widget _buildStatusBadge(WalletState walletState) {
+    final isOffline = walletState.isOffline;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: (isOffline ? Colors.orange : DayFiColors.red).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: (isOffline ? Colors.orange : DayFiColors.red).withOpacity(
+            0.25,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isOffline ? Icons.wifi_off_rounded : Icons.sync_problem_rounded,
+            size: 12,
+            color: (isOffline ? Colors.orange : DayFiColors.red).withOpacity(
+              0.8,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            isOffline
+                ? (walletState.lastKnownTotal != null
+                      ? 'Offline · last known balance'
+                      : 'No connection')
+                : 'Couldn\'t refresh · pull to retry',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: (isOffline ? Colors.orange : DayFiColors.red).withOpacity(
+                0.8,
+              ),
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 200.ms);
+  }
+
   // ─── Portfolio chip ──────────────────────────────────────
 
   Widget _buildPortfolioChip(WalletState walletState) {
     final heldAssets = <String>[];
-    if (walletState.usdcBalance > 0)
+    if (walletState.usdcBalance > 0) {
       heldAssets.add('assets/images/stellar.png');
+    }
     if (walletState.xlmBalance > 0) heldAssets.add('assets/images/usdc.png');
     if (heldAssets.isEmpty) {
       heldAssets.add('assets/images/stellar.png');

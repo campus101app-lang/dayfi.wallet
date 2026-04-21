@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
@@ -60,6 +61,8 @@ class _DayFiAppState extends ConsumerState<DayFiApp>
   final _auth = LocalAuthentication();
   bool _blurred = false;
   bool _authenticating = false;
+  DateTime? _lastAuthTime; // Track last successful authentication
+  static const int _sessionTimeoutMinutes = 5; // Grace period before re-auth
 
   @override
   void initState() {
@@ -90,7 +93,19 @@ class _DayFiAppState extends ConsumerState<DayFiApp>
       final faceEnabled = prefs.getBool('faceIdEnabled') ?? false;
       if (faceEnabled) setState(() => _blurred = true);
     } else if (state == AppLifecycleState.resumed) {
-      if (_blurred) await _tryAuthenticate();
+      if (_blurred) {
+        // Check if session has timed out
+        final now = DateTime.now();
+        final needsAuth = _lastAuthTime == null ||
+            now.difference(_lastAuthTime!).inMinutes >= _sessionTimeoutMinutes;
+
+        if (needsAuth) {
+          await _tryAuthenticate();
+        } else {
+          // Session still valid, no Face ID needed
+          if (mounted) setState(() => _blurred = false);
+        }
+      }
     }
   }
 
@@ -112,7 +127,13 @@ class _DayFiAppState extends ConsumerState<DayFiApp>
           stickyAuth: true,
         ),
       );
-      if (mounted) setState(() => _blurred = !ok);
+      if (ok) {
+        // Record successful authentication time
+        _lastAuthTime = DateTime.now();
+        if (mounted) setState(() => _blurred = false);
+      } else {
+        if (mounted) setState(() => _blurred = true);
+      }
     } catch (_) {
       if (mounted) setState(() => _blurred = true);
     } finally {
@@ -145,16 +166,16 @@ class _DayFiAppState extends ConsumerState<DayFiApp>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.face_retouching_natural,
-                            size: 64,
+                          SvgPicture.asset(
+                            'assets/icons/svgs/faceid.svg',
+                            height: 64,
                             color: Colors.white,
                           ),
                           const SizedBox(height: 20),
                           SizedBox(
                             width: 250,
                             child: Text(
-                              'Tap to unlock',
+                              'Tap to unlock with Face ID',
                               textAlign: TextAlign.center,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

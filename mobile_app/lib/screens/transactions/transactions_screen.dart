@@ -6,6 +6,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_app/widgets/app_background.dart';
+import 'package:mobile_app/widgets/app_bottomsheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
@@ -352,13 +353,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _showTypeFilter() {
-    showModalBottomSheet(
+    showDayFiBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
+        // backgroundColor: Theme.of(context).colorScheme.surface,
+        // shape: const RoundedRectangleBorder(
+        //   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        // ),
+      child:  Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -377,7 +378,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               focusColor: Colors.transparent,
               title: const Text('All'),
               onTap: () {
-                Navigator.pop(ctx);
+                Navigator.pop(context);
                 _applyFilter(null, _assetFilter);
               },
             ),
@@ -387,7 +388,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               focusColor: Colors.transparent,
               title: const Text('Sent'),
               onTap: () {
-                Navigator.pop(ctx);
+                Navigator.pop(context);
                 _applyFilter('send', _assetFilter);
               },
             ),
@@ -397,7 +398,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               focusColor: Colors.transparent,
               title: const Text('Received'),
               onTap: () {
-                Navigator.pop(ctx);
+                Navigator.pop(context);
                 _applyFilter('receive', _assetFilter);
               },
             ),
@@ -408,13 +409,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _showAssetFilter() {
-    showModalBottomSheet(
+    showDayFiBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
+    
+      child:  Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -433,7 +431,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               focusColor: Colors.transparent,
               title: const Text('All'),
               onTap: () {
-                Navigator.pop(ctx);
+                Navigator.pop(context);
                 _applyFilter(_typeFilter, null);
               },
             ),
@@ -443,7 +441,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               focusColor: Colors.transparent,
               title: const Text('USDC'),
               onTap: () {
-                Navigator.pop(ctx);
+                Navigator.pop(context);
                 _applyFilter(_typeFilter, 'USDC');
               },
             ),
@@ -453,7 +451,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               focusColor: Colors.transparent,
               title: const Text('XLM'),
               onTap: () {
-                Navigator.pop(ctx);
+                Navigator.pop(context);
                 _applyFilter(_typeFilter, 'XLM');
               },
             ),
@@ -509,28 +507,13 @@ void _showTxDetails(BuildContext context, Map<String, dynamic> tx) {
   final memo = tx['memo'] as String?;
   final fee = tx['fee'] as String?;
 
-  showModalBottomSheet(
+  showDayFiBottomSheet(
     context: context,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (ctx) => Padding(
+    child:  Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 20),
-
           SvgPicture.asset(
             isSend
                 ? 'assets/icons/svgs/arrow_out.svg'

@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_app/widgets/app_background.dart';
+import 'package:mobile_app/widgets/app_bottomsheet.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../services/api_service.dart';
@@ -141,13 +142,13 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
 
     final currencies = _rawAssets!.keys.toList();
 
-    showModalBottomSheet(
+    showDayFiBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
+      // backgroundColor: Theme.of(context).colorScheme.surface,
+      // shape: const RoundedRectangleBorder(
+      //   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      // ),
+      child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -160,13 +161,13 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
                 const Opacity(opacity: 0, child: Icon(Icons.close)),
                 Text(
                   'Choose Currency to Receive',
-                  style: Theme.of(ctx).textTheme.titleLarge!.copyWith(
+                  style: Theme.of(context).textTheme.titleLarge!.copyWith(
                     fontSize: 16,
                     letterSpacing: -.1,
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => Navigator.pop(ctx),
+                  onTap: () => Navigator.pop(context),
                   child: const Icon(Icons.close),
                 ),
               ],
@@ -183,7 +184,7 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
                     _selectedAssetCode = assetCode;
                     _selectedNetworkKey = 'stellar';
                   });
-                  Navigator.pop(ctx);
+                  Navigator.pop(context);
                 },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
@@ -192,7 +193,7 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(ctx).colorScheme.primary.withOpacity(0.08),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(14),
                     // border: Border.all(
                     //   color: isSelected
@@ -214,7 +215,7 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
                       const SizedBox(width: 14),
                       Text(
                         assetCode,
-                        style: Theme.of(ctx).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const Spacer(),
                       // if (isSelected)
@@ -248,7 +249,7 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
     final supportedNetworks =
         _rawAssets?[_selectedAssetCode] as List<dynamic>? ?? [];
 
-    showModalBottomSheet(
+    showDayFiBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
@@ -497,7 +498,9 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
             ),
           ),
         ] else ...[
-          Center(child: _QRCard(data: address).animate().fadeIn(delay: 100.ms),),
+          Center(
+            child: _QRCard(data: address).animate().fadeIn(delay: 100.ms),
+          ),
           const SizedBox(height: 20),
           Text(
             'Stellar network',

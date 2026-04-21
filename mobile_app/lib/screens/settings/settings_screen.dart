@@ -6,6 +6,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_app/main.dart';
 import 'package:mobile_app/widgets/app_background.dart';
+import 'package:mobile_app/widgets/app_bottomsheet.dart'
+    show showDayFiBottomSheet;
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../services/api_service.dart';
 import '../home/home_screen.dart'; // for userProvider
@@ -55,13 +57,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     WidgetRef ref,
     ThemeMode currentTheme,
   ) {
-    showModalBottomSheet(
+    showDayFiBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
+      // backgroundColor: Theme.of(context).colorScheme.surface,
+      // shape: const RoundedRectangleBorder(
+      //   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      // ),
+      child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -74,13 +76,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const Opacity(opacity: 0, child: Icon(Icons.close)),
                 Text(
                   'Choose Theme',
-                  style: Theme.of(ctx).textTheme.titleLarge!.copyWith(
+                  style: Theme.of(context).textTheme.titleLarge!.copyWith(
                     fontSize: 16,
                     letterSpacing: -.1,
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => Navigator.pop(ctx),
+                  onTap: () => Navigator.pop(context),
                   child: const Icon(Icons.close),
                 ),
               ],
@@ -96,7 +98,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () {
                     ref.read(themeModeProvider.notifier).state =
                         ThemeMode.light;
-                    Navigator.pop(ctx);
+                    Navigator.pop(context);
                   },
                 ),
                 _ThemeOption(
@@ -104,9 +106,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.dark_mode,
                   isSelected: currentTheme == ThemeMode.dark,
                   onTap: () {
-                    ref.read(themeModeProvider.notifier).state =
-                        ThemeMode.dark;
-                    Navigator.pop(ctx);
+                    ref.read(themeModeProvider.notifier).state = ThemeMode.dark;
+                    Navigator.pop(context);
                   },
                 ),
                 _ThemeOption(
@@ -116,7 +117,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () {
                     ref.read(themeModeProvider.notifier).state =
                         ThemeMode.system;
-                    Navigator.pop(ctx);
+                    Navigator.pop(context);
                   },
                 ),
               ],
@@ -258,71 +259,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               const SizedBox(height: 32),
 
-              // ── Preferences ───────────────────────────────
-              GestureDetector(
+              _SettingsTile(
+                icon: "assets/icons/svgs/theme.svg",
+                label: 'Theme',
+                subtitle: _getThemeLabel(themeMode),
                 onTap: () => _showThemePicker(context, ref, themeMode),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.color?.withOpacity(0.1),
-                  ),
-                  child: Row(
-                    children: [
-                      SvgPicture.asset(
-                        "assets/icons/svgs/theme.svg",
-                        height: 24,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.95),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Theme',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.95),
-                                    fontSize: 15,
-                                  ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _getThemeLabel(themeMode),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.6),
-                                    fontSize: 12,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.4),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              ).animate().fadeIn(delay: 200.ms),
 
               const SizedBox(height: 10),
 
@@ -416,8 +358,7 @@ class _SettingsTile extends StatelessWidget {
             SvgPicture.asset(
               icon,
               height: 24,
-              color:
-                  Theme.of(context).colorScheme.onSurface.withOpacity(0.95),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.95),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -432,11 +373,36 @@ class _SettingsTile extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              size: 24,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
-            ),
+
+            label == 'Theme'
+                ? Text(
+                    subtitle!,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.95),
+                      fontSize: 15,
+                    ),
+                  )
+                : label == 'App Version'
+                ? Text(
+                    "v1.0.1 (build: 47)",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.95),
+                      fontSize: 15,
+                    ),
+                  )
+                : Icon(
+                    Icons.chevron_right,
+                    size: 24,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.85),
+                  ),
           ],
         ),
       ),
@@ -476,11 +442,9 @@ class _ThemeOption extends StatelessWidget {
                     : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                 width: isSelected ? 2 : 1.5,
               ),
-              color: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.color
-                  ?.withOpacity(0.05),
+              color: Theme.of(
+                context,
+              ).textTheme.bodySmall?.color?.withOpacity(0.05),
             ),
             child: Icon(
               icon,

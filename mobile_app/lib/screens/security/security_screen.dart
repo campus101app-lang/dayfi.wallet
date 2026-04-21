@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:mobile_app/widgets/app_background.dart';
+import 'package:mobile_app/widgets/app_bottomsheet.dart';
 import 'package:mobile_app/widgets/app_switch.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
@@ -56,32 +57,115 @@ class _SecurityScreenState extends State<SecurityScreen> {
   }
 
   Future<void> _deleteAccount() async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showDayFiBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        title: Text(
-          'Delete Account',
-          style: Theme.of(context).textTheme.titleLarge,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 10),
+
+            // ── Title ──────────────────────────────────────
+            const SizedBox(height: 24),
+            // Center(
+            //   child: Text(
+            //     'Delete Account',
+            //     style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            //       fontSize: 36,
+            //       fontWeight: FontWeight.w700,
+            //       color: Colors.white,
+            //       letterSpacing: -1,
+            //       height: 1.09,
+            //     ),
+            //     textAlign: TextAlign.center,
+            //   ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
+            // ),
+            // const SizedBox(height: 18),
+
+            // ── Body ───────────────────────────────────────
+            Center(
+              child: Text(
+                'This will permanently delete your account and wallet. '
+                'Make sure you have saved your recovery phrase before continuing.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontSize: 17,
+                  letterSpacing: -.5,
+                  height: 1.3,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // ── Buttons ────────────────────────────────────
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(MediaQuery.of(context).size.width, 50),
+                side: BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(.90),
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.pop(context, true),
+
+              icon: SvgPicture.asset(
+                "assets/icons/svgs/delete.svg",
+                height: 20,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(.90),
+              ),
+              label: Text(
+                'Delete Account',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(.95),
+                  fontSize: 15,
+                ),
+              ),
+            ).animate().fadeIn(delay: 500.ms),
+
+            const SizedBox(height: 8),
+
+            // Create wallet
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0),
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () =>
+                  context.push('/auth/email', extra: {'isNewUser': true}),
+
+              label: Center(
+                child: Text(
+                  'Cancel',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(.95),
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ).animate().fadeIn(delay: 500.ms),
+          ],
         ),
-        content: Text(
-          'This will permanently delete your account and wallet. '
-          'Make sure you have saved your recovery phrase.',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: DayFiColors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
+
     if (confirm == true && mounted) {
       await apiService.clearToken();
       context.go('/onboarding');
@@ -249,10 +333,8 @@ class _SettingsTile extends StatelessWidget {
           children: [
             SvgPicture.asset(
               icon,
-              height: 24,
-              color:
-                  iconColor ??
-                  Theme.of(context).colorScheme.onSurface.withOpacity(0.95),
+              height: 22,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
             ),
             const SizedBox(width: 14),
             Expanded(

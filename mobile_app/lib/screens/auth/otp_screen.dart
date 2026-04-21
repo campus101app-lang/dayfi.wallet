@@ -1,8 +1,8 @@
 // lib/screens/auth/otp_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pinput/pinput.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/auth_button.dart';
@@ -20,11 +20,8 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  final List<TextEditingController> _controllers = List.generate(
-    6,
-    (_) => TextEditingController(),
-  );
-  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  final _pinController = TextEditingController();
+  final _pinFocusNode = FocusNode();
 
   bool _loading = false;
   bool _resending = false;
@@ -36,19 +33,15 @@ class _OtpScreenState extends State<OtpScreen> {
     super.initState();
     _startCountdown();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNodes[0].requestFocus();
+      _pinFocusNode.requestFocus();
     });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    for (final f in _focusNodes) {
-      f.dispose();
-    }
+    _pinController.dispose();
+    _pinFocusNode.dispose();
     super.dispose();
   }
 
@@ -64,7 +57,7 @@ class _OtpScreenState extends State<OtpScreen> {
     });
   }
 
-  String get _otp => _controllers.map((c) => c.text).join();
+  String get _otp => _pinController.text;
 
   Future<void> _verify() async {
     if (_otp.length < 6) return;
@@ -95,11 +88,8 @@ class _OtpScreenState extends State<OtpScreen> {
             backgroundColor: DayFiColors.red,
           ),
         );
-        // Clear OTP
-        for (final c in _controllers) {
-          c.clear();
-        }
-        _focusNodes[0].requestFocus();
+        _pinController.clear();
+        _pinFocusNode.requestFocus();
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -128,35 +118,6 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
-  void _onChanged(int index, String value) {
-    if (value.length == 6) {
-      // Handle paste
-      for (int i = 0; i < 6; i++) {
-        _controllers[i].text = value[i];
-      }
-      _focusNodes[5].requestFocus();
-      return;
-    }
-
-    if (value.isNotEmpty && index < 5) {
-      _focusNodes[index + 1].requestFocus();
-    }
-  }
-
-  void _clearField(int index) {
-    _controllers[index].clear();
-    _focusNodes[index].requestFocus();
-  }
-
-  void _onKeyPressed(int index, RawKeyEvent event) {
-    if (event is RawKeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.backspace &&
-        _controllers[index].text.isEmpty &&
-        index > 0) {
-      _focusNodes[index - 1].requestFocus();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final masked = widget.email.replaceRange(
@@ -165,169 +126,158 @@ class _OtpScreenState extends State<OtpScreen> {
       '***',
     );
 
+    // Match your original TextFormField styling
+    final borderColor = Theme.of(
+      context,
+    ).colorScheme.onSurface.withOpacity(0.05);
+    final focusedColor = Theme.of(context).colorScheme.primary;
+
+    final defaultPinTheme = PinTheme(
+      width: 50,
+      height: 56,
+      textStyle: Theme.of(context).textTheme.headlineMedium,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+    );
+
+    final focusedPinTheme = defaultPinTheme.copyWith(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: focusedColor, width: 1.5),
+      ),
+    );
+
     return AppBackground(
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
           child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 24),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: GestureDetector(
-                  onTap: () => context.pop(),
-                  child: const Icon(Icons.arrow_back_ios, size: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: () => context.pop(),
+                    child: const Icon(Icons.arrow_back_ios, size: 20),
+                  ),
                 ),
-              ),
-              const Spacer(flex: 1),
+                const Spacer(flex: 1),
 
-              Text(
-                'Enter the 6-digit code',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: -1,
-                  height: 1.09,
-                ),
-                textAlign: TextAlign.center,
-              ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
-              const SizedBox(height: 18),
+                Text(
+                  'Enter the 6-digit code',
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: -1,
+                    height: 1.09,
+                  ),
+                  textAlign: TextAlign.center,
+                ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
 
-              Text(
-                'Enter the code we\'ve sent to $masked',
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 17,
-                  letterSpacing: -.5,
-                  height: 1.3,
-                  color: Theme.of(context).textTheme.bodyMedium?.color!,
-                ),
-                textAlign: TextAlign.center,
-              ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
+                const SizedBox(height: 18),
 
-              const SizedBox(height: 32),
+                Text(
+                  'Enter the code we\'ve sent to $masked',
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 17,
+                    letterSpacing: -.5,
+                    height: 1.3,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                  textAlign: TextAlign.center,
+                ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
 
-              // OTP boxes
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(6, (i) {
-                  return SizedBox(
-                    width: 50,
-                    // height: 60,
-                    child: GestureDetector(
-                      onTap: () => _clearField(i),
-                      child: RawKeyboardListener(
-                        focusNode: FocusNode(),
-                        onKey: (e) => _onKeyPressed(i, e),
-                        child: TextFormField(
-                          controller: _controllers[i],
-                          focusNode: _focusNodes[i],
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          maxLength: i == 0 ? 6 : 1,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          style: Theme.of(context).textTheme.headlineMedium,
-                          decoration: InputDecoration(
-                            counterText: '',
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 12,
+                const SizedBox(height: 32),
+
+                // ── Pinput replaces the manual Row of TextFormFields ──
+                Pinput(
+                  length: 6,
+                  controller: _pinController,
+                  focusNode: _pinFocusNode,
+                  defaultPinTheme: defaultPinTheme,
+                  focusedPinTheme: focusedPinTheme,
+                  showCursor: true,
+                  // cursor: Column(
+                  //   mainAxisAlignment: MainAxisAlignment.end,
+                  //   children: [
+                  //     Container(
+                  //       margin: const EdgeInsets.only(bottom: 9),
+                  //       width: 16,
+                  //       height: 1.5,
+                  //       decoration: BoxDecoration(
+                  //         color: focusedColor,
+                  //         borderRadius: BorderRadius.circular(8),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  // Drives the Continue button enable/disable + auto-submit
+                  onChanged: (_) => setState(() {}),
+                  onCompleted: (_) => _verify(),
+                ).animate().fadeIn(delay: 200.ms),
+
+                const SizedBox(height: 32),
+
+                // Resend
+                Center(
+                  child: _resending
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : GestureDetector(
+                          onTap: _resendCountdown == 0 ? _resend : null,
+                          child: Text.rich(
+                            TextSpan(
+                              text: _resendCountdown > 0
+                                  ? 'Didn\'t get the code? Request a new one in '
+                                  : 'Didn\'t get the code? ',
+                              style: Theme.of(context).textTheme.bodySmall,
+                              children: [
+                                TextSpan(
+                                  text: _resendCountdown > 0
+                                      ? '00:${_resendCountdown.toString().padLeft(2, '0')}'
+                                      : 'Resend',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: _resendCountdown == 0
+                                            ? focusedColor
+                                            : null,
+                                        letterSpacing: -.1,
+                                        fontSize: 12,
+                                      ),
+                                ),
+                              ],
                             ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.05),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.05),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.05),
-                              ),
-                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          onChanged: (v) => _onChanged(i, v),
                         ),
-                      ),
-                    ),
-                  );
-                }),
-              ).animate().fadeIn(delay: 200.ms),
+                ),
 
-              const SizedBox(height: 32),
+                const Spacer(flex: 3),
 
-              // Resend
-              Center(
-                child: _resending
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : GestureDetector(
-                        onTap: _resendCountdown == 0 ? _resend : null,
-                        child: Text.rich(
-                          TextSpan(
-                            text: _resendCountdown > 0
-                                ? 'Didn\'t get the code? Request a new one in '
-                                : 'Didn\'t get the code? ',
-                            style: Theme.of(context).textTheme.bodySmall,
-                            children: [
-                              TextSpan(
-                                text: _resendCountdown > 0
-                                    ? '00:${_resendCountdown.toString().padLeft(2, '0')}'
-                                    : 'Resend',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: _resendCountdown == 0
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                          : null,
-                                      letterSpacing: -.1,
-                                      fontSize: 12,
-                                    ),
-                              ),
-                            ],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-              ),
+                AuthButton(
+                  label: 'Continue',
+                  onPressed: _otp.length == 6 ? _verify : null,
+                  isLoading: _loading,
+                  loadingText: 'Verifying...',
+                  isValid: _otp.length == 6,
+                ),
 
-              const Spacer(flex: 3),
-
-              AuthButton(
-                label: 'Continue',
-                onPressed: _otp.length == 6 ? _verify : null,
-                isLoading: _loading,
-                loadingText: 'Verifying...',
-                isValid: _otp.length == 6,
-              ),
-
-              const SizedBox(height: 32),
-            ],
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 }

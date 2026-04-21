@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_app/widgets/app_background.dart';
+import 'package:mobile_app/widgets/app_bottomsheet.dart';
 import '../../providers/wallet_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
@@ -139,11 +141,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
   }
 
   void _openAssetDetail(BuildContext context, _AssetDetail detail) {
-    showModalBottomSheet(
+    showDayFiBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _AssetDetailSheet(detail: detail),
+      child: _AssetDetailSheet(detail: detail),
     );
   }
 
@@ -341,21 +341,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: pos ? DayFiColors.greenDim : Colors.red.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Text(
-            '${pos ? '+' : ''}${pct.toStringAsFixed(2)}%',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: pos ? DayFiColors.green : Colors.redAccent,
-              fontWeight: FontWeight.w500,
-              fontSize: 11,
-            ),
-          ),
-        ),
+        _ChangeBadge(changePercent: pct),
         const SizedBox(width: 8),
         Text(
           '${pos ? '+' : ''}\$${abs.abs().toStringAsFixed(2)} $label',
@@ -625,7 +611,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Assets',
+          '',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w500,
             letterSpacing: -0.3,
@@ -638,7 +624,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
           return _AssetCard(
                 detail: a,
                 allocPct: alloc,
-                onTap: () => _openAssetDetail(context, a),
+                onTap: () => {_openAssetDetail(context, a)},
               )
               .animate()
               .fadeIn(delay: Duration(milliseconds: 350 + e.key * 80))
@@ -666,8 +652,8 @@ class _AssetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pos = detail.changePercent >= 0;
     return GestureDetector(
-      // onTap: onTap,
-      onTap: () {},
+      onTap: onTap,
+      // onTap: () {},
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -732,7 +718,7 @@ class _AssetCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 32),
                 // value + change
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -749,11 +735,13 @@ class _AssetCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
+
                     Text(
                       '${pos ? '+' : ''}${detail.changePercent.toStringAsFixed(2)}%',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: pos ? DayFiColors.green : Colors.redAccent,
-                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 11,
                       ),
                     ),
                   ],
@@ -798,402 +786,256 @@ class _AssetDetailSheetState extends State<_AssetDetailSheet> {
         ? DayFiColors.greenDim
         : Colors.redAccent.withOpacity(0.12);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.82,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (ctx, scrollCtrl) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            // drag handle
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 4),
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Opacity(opacity: 0, child: Icon(Icons.close)),
+    
+              // const SizedBox(height: 4),
+              Text(
+                d.name,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(2),
+                  ).colorScheme.onSurface.withOpacity(0.4),
                 ),
               ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: scrollCtrl,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-
-                    // ─ Header
-                    Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0.06),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Center(
-                            child: Image.asset(
-                              d.imagePath,
-                              width: 30,
-                              height: 30,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                d.code,
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: -0.3,
-                                    ),
-                              ),
-                              Text(
-                                d.name,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface.withOpacity(0.4),
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.pop(ctx),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(0.06),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(0.5),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ─ Big amount
-                    Text(
-                      '\$${d.usdValue.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: -2,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: changeBg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${pos ? '+' : ''}${d.changePercent.toStringAsFixed(2)}%',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: changeColor,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ─ Period selector
-                    Row(
-                      children: List.generate(_periodLabels.length, (i) {
-                        final sel = i == _period;
-                        return GestureDetector(
-                          onTap: () => setState(() => _period = i),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: sel
-                                  ? Theme.of(context).colorScheme.onSurface
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: sel
-                                    ? Colors.transparent
-                                    : Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface.withOpacity(0.12),
-                              ),
-                            ),
-                            child: Text(
-                              _periodLabels[i],
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: sel
-                                        ? Theme.of(
-                                            context,
-                                          ).scaffoldBackgroundColor
-                                        : Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                    fontSize: 11,
-                                  ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // ─ Chart
-                    Container(
-                      height: 110,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.06),
-                        ),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: CustomPaint(
-                        painter: _SparklinePainter(
-                          points: d.points,
-                          color: changeColor,
-                          fillColor: changeColor.withOpacity(0.07),
-                          showEndDot: true,
-                        ),
-                        child: const SizedBox.expand(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ─ Stats grid
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatCard(
-                            label: 'Balance',
-                            value:
-                                '${d.balance.toStringAsFixed(d.code == 'USDC' ? 2 : 4)} ${d.code}',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _StatCard(
-                            label: '24h Change',
-                            value:
-                                '${pos ? '+' : ''}${d.changePercent.toStringAsFixed(2)}%',
-                            valueColor: changeColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatCard(
-                            label: 'USD Value',
-                            value: '\$${d.usdValue.toStringAsFixed(2)}',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _StatCard(
-                            label: 'Price',
-                            value:
-                                '\$${d.price.toStringAsFixed(d.code == 'USDC' ? 2 : 4)}',
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ─ Info rows
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.06),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          _InfoRow(label: 'Network', value: 'Stellar'),
-                          _InfoRow(
-                            label: 'Available',
-                            value:
-                                '${d.available.toStringAsFixed(d.code == 'USDC' ? 2 : 4)} ${d.code}',
-                          ),
-                          if (d.code == 'XLM')
-                            _InfoRow(
-                              label: 'Reserved',
-                              value: '${d.reserved.toStringAsFixed(1)} XLM',
-                              isLast: true,
-                            )
-                          else
-                            const _InfoRow(
-                              label: 'Reserved',
-                              value: '—',
-                              isLast: true,
-                            ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ─ Action buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 50),
-                              side: BorderSide(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.85),
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              // TODO: navigate to send screen with pre-selected asset
-                            },
-                            child: Text(
-                              'Send',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.85),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 50),
-                              side: BorderSide(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.85),
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              // TODO: navigate to receive screen with pre-selected asset
-                            },
-                            child: Text(
-                              'Receive',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.85),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 50),
-                              side: BorderSide(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.85),
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              // TODO: navigate to swap screen with pre-selected asset
-                            },
-                            child: Text(
-                              'Swap',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.85),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 40),
-                  ],
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.close),
+              ),
+            ],
+          ),
+    
+          // const SizedBox(height: 0),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(48),
+                child: Image.asset(d.imagePath, width: 18, height: 18),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                d.code,
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  fontSize: 16,
+                  letterSpacing: -.1,
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+    
+          // const SizedBox(height: 32),
+    
+          // ─ Big amount
+          // Text(
+          //   '\$${d.usdValue.toStringAsFixed(2)}',
+          //   style: Theme.of(context).textTheme.displayMedium?.copyWith(
+          //     fontWeight: FontWeight.w400,
+          //     letterSpacing: -2,
+          //     height: 1,
+          //   ),
+          // ),
+          // const SizedBox(height: 16),
+    
+          // _ChangeBadge(changePercent: d.changePercent),
+    
+          // const SizedBox(height: 16),
+    
+          // ─ Period selector
+          // Row(
+          //   children: List.generate(_periodLabels.length, (i) {
+          //     final sel = i == _period;
+          //     return GestureDetector(
+          //       onTap: () => setState(() => _period = i),
+          //       child: AnimatedContainer(
+          //         duration: const Duration(milliseconds: 200),
+          //         margin: const EdgeInsets.only(right: 8),
+          //         padding: const EdgeInsets.symmetric(
+          //           horizontal: 12,
+          //           vertical: 5,
+          //         ),
+          //         decoration: BoxDecoration(
+          //           color: sel
+          //               ? Theme.of(context).colorScheme.onSurface
+          //               : Colors.transparent,
+          //           borderRadius: BorderRadius.circular(20),
+          //           border: Border.all(
+          //             color: sel
+          //                 ? Colors.transparent
+          //                 : Theme.of(
+          //                     context,
+          //                   ).colorScheme.onSurface.withOpacity(0.12),
+          //           ),
+          //         ),
+          //         child: Text(
+          //           _periodLabels[i],
+          //           style: Theme.of(context).textTheme.bodySmall
+          //               ?.copyWith(
+          //                 color: sel
+          //                     ? Theme.of(
+          //                         context,
+          //                       ).scaffoldBackgroundColor
+          //                     : Theme.of(
+          //                         context,
+          //                       ).colorScheme.onSurface,
+          //                 fontSize: 11,
+          //               ),
+          //         ),
+          //       ),
+          //     );
+          //   }),
+          // ),
+    
+          // const SizedBox(height: 14),
+    
+          // ─ Chart
+          // Container(
+          //   height: 110,
+          //   decoration: BoxDecoration(
+          //     color: Theme.of(context).colorScheme.surface,
+          //     borderRadius: BorderRadius.circular(16),
+          //     border: Border.all(
+          //       color: Theme.of(
+          //         context,
+          //       ).colorScheme.onSurface.withOpacity(0.06),
+          //     ),
+          //   ),
+          //   clipBehavior: Clip.antiAlias,
+          //   child: CustomPaint(
+          //     painter: _SparklinePainter(
+          //       points: d.points,
+          //       color: changeColor,
+          //       fillColor: changeColor.withOpacity(0.07),
+          //       showEndDot: true,
+          //     ),
+          //     child: const SizedBox.expand(),
+          //   ),
+          // ),
+          const SizedBox(height: 20),
+    
+          // ─ Stats grid
+          Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  label: 'Balance',
+                  value:
+                      '${d.balance.toStringAsFixed(d.code == 'USDC' ? 2 : 4)} ${d.code}',
+                  valueColor: Theme.of(
+                    context,
+                  ).textTheme.displayLarge?.color?.withOpacity(.85),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatCard(
+                  label: '24h Change',
+                  value:
+                      '${pos ? '+' : ''}${d.changePercent.toStringAsFixed(2)}%',
+                  valueColor: changeColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  label: 'USD Value',
+                  value: '\$${d.usdValue.toStringAsFixed(2)}',
+                  valueColor: Theme.of(
+                    context,
+                  ).textTheme.displayLarge?.color?.withOpacity(.85),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatCard(
+                  label: 'Price',
+                  value:
+                      '\$${d.price.toStringAsFixed(d.code == 'USDC' ? 2 : 4)}',
+                  valueColor: Theme.of(
+                    context,
+                  ).textTheme.displayLarge?.color?.withOpacity(.85),
+                ),
+              ),
+            ],
+          ),
+    
+          const SizedBox(height: 56),
+    
+          // ─ Info rows
+          // Container(
+          //   decoration: BoxDecoration(
+          //     color: Theme.of(context).colorScheme.surface,
+          //     borderRadius: BorderRadius.circular(16),
+          //     border: Border.all(
+          //       color: Theme.of(
+          //         context,
+          //       ).colorScheme.onSurface.withOpacity(0.06),
+          //     ),
+          //   ),
+          //   child: Column(
+          //     children: [
+          //       _InfoRow(label: 'Network', value: 'Stellar'),
+          //       _InfoRow(
+          //         label: 'Available',
+          //         value:
+          //             '${d.available.toStringAsFixed(d.code == 'USDC' ? 2 : 4)} ${d.code}',
+          //       ),
+          //       if (d.code == 'XLM')
+          //         _InfoRow(
+          //           label: 'Reserved',
+          //           value: '${d.reserved.toStringAsFixed(1)} XLM',
+          //           isLast: true,
+          //         )
+          //       else
+          //         const _InfoRow(
+          //           label: 'Reserved',
+          //           value: '—',
+          //           isLast: true,
+          //         ),
+          //     ],
+          //   ),
+          // ),
+          // const SizedBox(height: 24),
+    
+          // ─ Action buttons
+          Row(
+            children: [
+              _ActionButton(
+                icon: "assets/icons/svgs/send.svg",
+                label: 'Send',
+                onPressed: () => context.push('/send'),
+              ),
+              const SizedBox(width: 10),
+              _ActionButton(
+                icon: "assets/icons/svgs/receive.svg",
+                label: 'Receive',
+                onPressed: () => context.push('/receive'),
+              ),
+              // const SizedBox(width: 10),
+              // _ActionButton(
+              //   icon: "assets/icons/svgs/swap.svg",
+              //   label: 'Swap',
+              //   onPressed: () => Navigator.pop(context),
+              // ),
+            ],
+          ),
+    
+          const SizedBox(height: 40),
+        ],
       ),
     );
   }
@@ -1210,15 +1052,8 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return _CardContainer(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.06),
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1235,6 +1070,7 @@ class _StatCard extends StatelessWidget {
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w500,
               color: valueColor,
+              fontSize: 16,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -1343,6 +1179,117 @@ class _AllocationRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Card container (reusable) ────────────────────────────────────────────────
+
+class _CardContainer extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets padding;
+
+  const _CardContainer({
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+// ─── Change badge (reusable) ──────────────────────────────────────────────────
+
+class _ChangeBadge extends StatelessWidget {
+  final double changePercent;
+
+  const _ChangeBadge({required this.changePercent});
+
+  @override
+  Widget build(BuildContext context) {
+    final pos = changePercent >= 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: pos ? DayFiColors.greenDim : Colors.red.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Text(
+        '${pos ? '+' : ''}${changePercent.toStringAsFixed(2)}%',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: pos ? DayFiColors.green : Colors.redAccent,
+          fontWeight: FontWeight.w500,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Action button (reusable) ─────────────────────────────────────────────────
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final String icon;
+  final VoidCallback onPressed;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 50),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+            width: 1.5,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        onPressed: onPressed,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              icon,
+              height: 20,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(.60),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.85),
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
+import 'package:mobile_app/widgets/app_bottomsheet.dart';
 import '../../models/asset.dart';
 import '../../providers/wallet_provider.dart';
 import '../../services/api_service.dart';
@@ -175,31 +177,95 @@ class _SendScreenState extends ConsumerState<SendScreen> {
       );
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
-        _showSuccess(result);
+        _showSendSuccess(result);
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
 
         // Show error with retry option
-        showDialog(
+        showDayFiBottomSheet(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Send Failed'),
-            content: Text(apiService.parseError(e)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Dismiss'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _send(); // Retry
-                },
-                child: const Text('Retry'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 24),
+
+                Center(
+                  child: Text(
+                    'This transaction could not be completed. ${apiService.parseError(e)}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 17,
+                      letterSpacing: -.5,
+                      height: 1.3,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Retry
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size(MediaQuery.of(context).size.width, 50),
+                    side: BorderSide(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(.90),
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _send();
+                  },
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                  label: Text(
+                    'Retry',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(.95),
+                      fontSize: 15,
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 500.ms),
+
+                const SizedBox(height: 8),
+
+                // Dismiss
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size(MediaQuery.of(context).size.width, 48),
+                    side: const BorderSide(
+                      color: Colors.transparent,
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Center(
+                    child: Text(
+                      'Dismiss',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(.95),
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 500.ms),
+              ],
+            ),
           ),
         );
       }
@@ -208,54 +274,88 @@ class _SendScreenState extends ConsumerState<SendScreen> {
     }
   }
 
-  void _showSuccess(Map<String, dynamic> result) {
-    showModalBottomSheet(
+  void _showSendSuccess(Map<String, dynamic> result) {
+    showDayFiBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(32),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                color: DayFiColors.greenDim,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check,
-                color: DayFiColors.green,
-                size: 32,
+            const SizedBox(height: 8),
+
+            // ── Lottie success ──────────────────────────────
+            Lottie.asset(
+              'assets/animations/success.json',
+              width: 120,
+              height: 120,
+              repeat: false,
+            ),
+
+            const SizedBox(height: 4),
+
+            Text(
+              'Sent!',
+              style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -1,
+                height: 1.1,
               ),
             ),
-            const SizedBox(height: 20),
-            Text('Sent!', style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
+
             Text(
               '${_amountController.text} $_selectedAsset sent successfully.',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontSize: 17,
+                letterSpacing: -.5,
+                height: 1.3,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-            if (result['transaction']?['hash'] != null)
+
+            if (result['transaction']?['hash'] != null) ...[
+              const SizedBox(height: 8),
               Text(
                 'Tx: ${(result['transaction']['hash'] as String).substring(0, 12)}...',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(letterSpacing: 0.2),
               ),
+            ],
+
             const SizedBox(height: 32),
-            ElevatedButton(
+
+            // ── Done button ─────────────────────────────────
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(MediaQuery.of(context).size.width, 50),
+                side: BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(.90),
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: () {
-                Navigator.pop(ctx);
+                Navigator.pop(context);
                 context.go('/home');
               },
-              child: const Text('Done'),
-            ),
-            const SizedBox(height: 16),
+              child: Text(
+                'Done',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(.95),
+                  fontSize: 15,
+                ),
+              ),
+            ).animate().fadeIn(delay: 500.ms),
           ],
         ),
       ),
@@ -271,13 +371,13 @@ class _SendScreenState extends ConsumerState<SendScreen> {
   void _showAssetPicker() {
     const assets = kAssetList;
 
-    showModalBottomSheet(
+    showDayFiBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
+      // backgroundColor: Theme.of(context).colorScheme.surface,
+      // shape: const RoundedRectangleBorder(
+      //   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      // ),
+      child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -290,13 +390,13 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                 const Opacity(opacity: 0, child: Icon(Icons.close)),
                 Text(
                   'Choose Asset to Send',
-                  style: Theme.of(ctx).textTheme.titleLarge!.copyWith(
+                  style: Theme.of(context).textTheme.titleLarge!.copyWith(
                     fontSize: 16,
                     letterSpacing: -.1,
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => Navigator.pop(ctx),
+                  onTap: () => Navigator.pop(context),
                   child: const Icon(Icons.close),
                 ),
               ],
@@ -313,7 +413,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                     _amountError = null;
                     _invalidAmount = false;
                   });
-                  Navigator.pop(ctx);
+                  Navigator.pop(context);
                 },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
@@ -322,7 +422,9 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(ctx).colorScheme.primary.withOpacity(0.08),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(14),
                     // border: Border.all(
                     //   color: isSelected
@@ -345,7 +447,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
 
                       Text(
                         assetCode,
-                        style: Theme.of(ctx).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
 
                       const Spacer(),
