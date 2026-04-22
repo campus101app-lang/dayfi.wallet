@@ -24,25 +24,32 @@ class AuthButton extends StatelessWidget {
     final isButtonDisabled = isDisabled || onPressed == null;
     final opacityValue = (isValid && !isButtonDisabled) ? 0.90 : 0.45;
 
-    return OutlinedButton.icon(
-      style: OutlinedButton.styleFrom(
-        minimumSize: Size(MediaQuery.of(context).size.width, 48),
-        side: BorderSide(
-          color: Theme.of(
-            context,
-          ).colorScheme.onSurface.withOpacity(opacityValue),
-          width: 1.5,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 420),
+      child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          minimumSize: Size(MediaQuery.of(context).size.width, 48),
+          side: BorderSide(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withOpacity(opacityValue),
+            width: 1.5,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      onPressed: isButtonDisabled ? null : onPressed,
-      label: Text(
-        isLoading && (loadingText?.isNotEmpty ?? false) ? loadingText! : label,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Theme.of(
-            context,
-          ).colorScheme.onSurface.withOpacity(opacityValue),
-          fontSize: 15,
+        onPressed: isButtonDisabled ? null : onPressed,
+        label: Text(
+          isLoading && (loadingText?.isNotEmpty ?? false)
+              ? loadingText!
+              : label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withOpacity(opacityValue),
+            fontSize: 15,
+          ),
         ),
       ),
     );

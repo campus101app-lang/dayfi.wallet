@@ -304,7 +304,9 @@ class _BuyScreenState extends State<BuyScreen> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 8),
-              TextField(
+                 ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child:  TextField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -317,7 +319,7 @@ class _BuyScreenState extends State<BuyScreen> {
                   prefixText: '\$ ',
                   suffixText: 'USD',
                 ),
-              ).animate().fadeIn(delay: 100.ms),
+              ).animate().fadeIn(delay: 100.ms),),
 
               const SizedBox(height: 16),
 
@@ -538,7 +540,9 @@ class _SellScreenState extends State<SellScreen> {
               const SizedBox(height: 28),
               Text('Amount', style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 8),
-              TextField(
+                 ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child:  TextField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -547,7 +551,7 @@ class _SellScreenState extends State<SellScreen> {
                   hintText: '0.00',
                   suffixText: _selectedAsset,
                 ),
-              ).animate().fadeIn(delay: 100.ms),
+              ).animate().fadeIn(delay: 100.ms),),
 
               const Spacer(),
 

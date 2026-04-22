@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobile_app/widgets/app_bottomsheet.dart';
+import 'dart:async';
 import '../../models/asset.dart';
 import '../../providers/wallet_provider.dart';
 import '../../services/api_service.dart';
@@ -32,14 +33,22 @@ class _SendScreenState extends ConsumerState<SendScreen> {
   String? _amountError;
   Map<String, dynamic>? _resolvedRecipient;
   String? _recipientError;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialAsset != null) {
       _selectedAsset = widget.initialAsset!;
+    } else {
+      // Auto-select USDC if user has balance, otherwise default to USDC
+      final wallet = ref.read(walletProvider);
+      if (wallet.usdcBalance > 0) {
+        _selectedAsset = 'USDC';
+      }
     }
-    _amountController.addListener(_validateAmount);
+    _amountController.addListener(() => _onAmountChanged(_amountController.text));
+    _toController.addListener(() => setState(() {}));
   }
 
   @override
@@ -47,7 +56,18 @@ class _SendScreenState extends ConsumerState<SendScreen> {
     _toController.dispose();
     _amountController.dispose();
     _memoController.dispose();
+    _debounce?.cancel();
     super.dispose();
+  }
+
+  void _onAmountChanged(String val) {
+    _debounce?.cancel();
+    setState(() {
+      _amountError = null;
+      _invalidAmount = false;
+    });
+    if (val.isEmpty || double.tryParse(val) == null) return;
+    _debounce = Timer(const Duration(milliseconds: 500), _validateAmount);
   }
 
   void _validateAmount() {
@@ -61,7 +81,8 @@ class _SendScreenState extends ConsumerState<SendScreen> {
       } else if (amount <= 0) {
         _invalidAmount = true;
         _amountError = 'Amount must be greater than 0';
-      } else if (amount > available) {
+      } else if (amount > available + 0.0001) {
+        // ← epsilon tolerance
         _invalidAmount = true;
         _amountError =
             'Insufficient balance. Available: ${available.toStringAsFixed(_selectedAsset == 'XLM' ? 4 : 2)} $_selectedAsset';
@@ -75,13 +96,9 @@ class _SendScreenState extends ConsumerState<SendScreen> {
   double _availableBalance(String asset) {
     final wallet = ref.read(walletProvider);
     if (asset == 'XLM') {
-      // Balance - 2.0 XLM reserve - fee (for multi-hop swaps)
-      return (wallet.xlmBalance - 2.0 - _estimatedFeeXLM()).clamp(
-        0,
-        double.infinity,
-      );
+      // Reserve 2.0 XLM for Stellar minimum + trustlines, fee is negligible
+      return (wallet.xlmBalance - 2.0).clamp(0, double.infinity);
     }
-    // USDC: full balance available (fee paid in XLM)
     return wallet.usdcBalance;
   }
 
@@ -191,7 +208,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
 
     try {
       final result = await apiService.sendFunds(
-        to: to,
+        to: _resolvedRecipient?['stellarAddress'] ?? to,
         amount: amount,
         asset: _selectedAsset,
         memo: _memoController.text.trim().isEmpty
@@ -231,53 +248,28 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                 const SizedBox(height: 32),
 
                 // Retry
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: Size(MediaQuery.of(context).size.width, 48),
-                    side: BorderSide(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(.90),
-                      width: 1.5,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: Size(MediaQuery.of(context).size.width, 48),
+                      side: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(.90),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _send();
-                  },
-                  icon: const Icon(Icons.refresh_rounded, size: 20),
-                  label: Text(
-                    'Retry',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(.95),
-                      fontSize: 15,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 500.ms),
-
-                const SizedBox(height: 8),
-
-                // Dismiss
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: Size(MediaQuery.of(context).size.width, 48),
-                    side: const BorderSide(
-                      color: Colors.transparent,
-                      width: 1.5,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: Center(
-                    child: Text(
-                      'Dismiss',
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _send();
+                    },
+                    icon: const Icon(Icons.refresh_rounded, size: 20),
+                    label: Text(
+                      'Retry',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(
                           context,
@@ -285,8 +277,39 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                         fontSize: 15,
                       ),
                     ),
-                  ),
-                ).animate().fadeIn(delay: 500.ms),
+                  ).animate().fadeIn(delay: 500.ms),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Dismiss
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: Size(MediaQuery.of(context).size.width, 48),
+                      side: const BorderSide(
+                        color: Colors.transparent,
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: Center(
+                      child: Text(
+                        'Dismiss',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(.95),
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 500.ms),
+                ),
               ],
             ),
           ),
@@ -494,7 +517,25 @@ class _SendScreenState extends ConsumerState<SendScreen> {
 
   Widget _buildSendBalanceInfo(String assetCode) {
     final available = _availableBalance(assetCode);
-    // final wallet = ref.read(walletProvider);
+    
+    // Show error if amount is invalid
+    if (_invalidAmount && _amountError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            _amountError!,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: const Color(0xFFFFA726),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Show available balance
     return Center(
       child: Padding(
         padding: const EdgeInsets.only(top: 6),
@@ -585,7 +626,9 @@ class _SendScreenState extends ConsumerState<SendScreen> {
 
                 const SizedBox(height: 20),
 
-                TextField(
+                   ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child:  TextField(
                   controller: _toController,
                   autocorrect: false,
                   onChanged: (v) {
@@ -653,31 +696,45 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                             ),
                           )
                         : null,
-                    errorText: _recipientError,
+
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 12,
                       horizontal: 10,
                     ),
                   ),
-                ).animate().fadeIn(delay: 50.ms),
+                ).animate().fadeIn(delay: 50.ms),),
 
-                if (_resolvedRecipient != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    _resolvedRecipient!['username'] ??
-                        _resolvedRecipient!['address'] ??
-                        '',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: DayFiColors.green,
-                      fontSize: 12,
+                if (_recipientError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 4),
+                    child: Text(
+                      _recipientError!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 12,
+                      ),
+                    ),
+                  )
+                else if (_resolvedRecipient != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 4),
+                    child: Text(
+                      _resolvedRecipient!['username'] ??
+                          _resolvedRecipient!['address'] ??
+                          'Recipient found on-chain',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: DayFiColors.green,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                ],
 
                 const SizedBox(height: 20),
 
                 // Amount
-                TextField(
+                   ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child:  TextField(
                   controller: _amountController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -732,7 +789,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                       horizontal: 10,
                     ),
                   ),
-                ).animate().fadeIn(delay: 100.ms),
+                ).animate().fadeIn(delay: 100.ms),),
 
                 const SizedBox(height: 4),
                 InkWell(
@@ -751,7 +808,9 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                 const SizedBox(height: 20),
 
                 // Memo
-                TextField(
+                   ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child:  TextField(
                   controller: _memoController,
                   maxLength: 28,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -803,61 +862,60 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                     ),
                     counterText: '',
                   ),
-                ).animate().fadeIn(delay: 100.ms),
+                ).animate().fadeIn(delay: 100.ms),),
 
                 const SizedBox(height: 20),
 
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 48),
-                    side: BorderSide(
-                      color:
-                          _loading ||
-                              _invalidAmount ||
-                              _amountController.text.isEmpty
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(.45)
-                          : Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(.90),
-                      width: 1.5,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed:
-                      _loading ||
-                          _invalidAmount ||
-                          _amountController.text.isEmpty
-                      ? null
-                      : _send,
-
-                  label: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Send',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color:
-                              _loading ||
-                                  _invalidAmount ||
-                                  _amountController.text.isEmpty
-                              ? Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(.45)
-                              : Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(.90),
-                          fontSize: 15,
-                        ),
+                // Replace OutlinedButton.icon with a plain OutlinedButton + full width
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                      side: BorderSide(
+                        color:
+                            _loading ||
+                                _invalidAmount ||
+                                _amountController.text.isEmpty ||
+                                _toController.text.trim().isEmpty
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(.45)
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(.90),
+                        width: 1.5,
                       ),
-                    ],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed:
+                        _loading ||
+                            _invalidAmount ||
+                            _amountController.text.isEmpty ||
+                            _toController.text.trim().isEmpty
+                        ? null
+                        : _send,
+                    child: Text(
+                      'Send',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color:
+                            _loading ||
+                                _invalidAmount ||
+                                _amountController.text.isEmpty ||
+                                _toController.text.trim().isEmpty
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(.45)
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(.90),
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
-
                 const SizedBox(height: 32),
               ],
             ),

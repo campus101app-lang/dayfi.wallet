@@ -117,70 +117,73 @@ class _EmailScreenState extends State<EmailScreen> {
                   const SizedBox(height: 32),
 
                   // Email field
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    autocorrect: false,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _continue(),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(.85),
-                      fontSize: 15,
-                      letterSpacing: -.1,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Type your Email',
-                      hintStyle: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(.35),
-                            fontSize: 15,
-                            letterSpacing: -.1,
-                          ),
-                      fillColor: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.color?.withOpacity(0.2),
-                      filled: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      autocorrect: false,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _continue(),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(.85),
+                        fontSize: 15,
+                        letterSpacing: -.1,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                      decoration: InputDecoration(
+                        hintText: 'Type your Email',
+                        hintStyle: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(.35),
+                              fontSize: 15,
+                              letterSpacing: -.1,
+                            ),
+                        fillColor: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.color?.withOpacity(0.2),
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        disabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 10,
+                        ),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      disabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 10,
-                      ),
-                    ),
-                    validator: (val) {
-                      if (val == null || val.isEmpty) return 'Email required';
-                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(val)) {
-                        return 'Enter a valid email';
-                      }
-                      return null;
-                    },
-                  ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
+                      validator: (val) {
+                        if (val == null || val.isEmpty) return 'Email required';
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(val)) {
+                          return 'Enter a valid email';
+                        }
+                        return null;
+                      },
+                    ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
+                  ),
                   const Spacer(flex: 4),
 
                   // Continue button

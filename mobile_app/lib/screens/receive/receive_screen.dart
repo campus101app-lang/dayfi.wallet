@@ -496,7 +496,7 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
               children: [
                 const SizedBox(height: 24),
                 SvgPicture.asset(
-                  "assets/images/qrcode.svg",
+                  "assets/icons/svgs/qrcode.svg",
                   height: 80,
                   color: Theme.of(
                     context,
@@ -761,10 +761,12 @@ class _ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return     ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
+          child:    OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 48),
               side: BorderSide(
@@ -792,7 +794,7 @@ class _ActionButtons extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: OutlinedButton.icon(
+          child:       OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 48),
               side: BorderSide(
@@ -819,6 +821,6 @@ class _ActionButtons extends StatelessWidget {
           ),
         ),
       ],
-    );
+    ));
   }
 }

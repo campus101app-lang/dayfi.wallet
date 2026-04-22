@@ -109,7 +109,7 @@ class _RecoveryPhraseScreenState extends State<RecoveryPhraseScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Wallet backed up ✓'),
+            content: Text('Wallet backed up'),
             backgroundColor: DayFiColors.green,
           ),
         );
@@ -137,9 +137,9 @@ class _RecoveryPhraseScreenState extends State<RecoveryPhraseScreen>
             ),
           ),
           leading: InkWell(
-  splashColor: Colors.transparent,
-  highlightColor: Colors.transparent,
-  hoverColor: Colors.transparent,
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            hoverColor: Colors.transparent,
             onTap: () => context.pop(),
             child: const Icon(Icons.arrow_back_ios, size: 20),
           ),
@@ -180,7 +180,6 @@ class _RecoveryPhraseScreenState extends State<RecoveryPhraseScreen>
                               ),
                             ],
                           ).animate().fadeIn(),
-
                           // Container(
                           //   padding: const EdgeInsets.all(14),
                           //   decoration: BoxDecoration(
@@ -260,28 +259,104 @@ class _RecoveryPhraseScreenState extends State<RecoveryPhraseScreen>
 
                           const SizedBox(height: 28),
 
-                          // Copy button
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              Clipboard.setData(
-                                ClipboardData(text: _words?.join(' ') ?? ''),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Copied to clipboard'),
+                          // Buttons
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 18),
+                            child: Column(
+                              children: [
+                                // Create wallet
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 420,
+                                  ),
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: Size(
+                                        MediaQuery.of(context).size.width,
+                                        48,
+                                      ),
+                                      side: BorderSide(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(.90),
+                                        width: 1.5,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      Clipboard.setData(
+                                        ClipboardData(
+                                          text: _words?.join(' ') ?? '',
+                                        ),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Copied to clipboard'),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.copy, size: 20),
+                                    label: Text(
+                                      'Copy all words',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(.95),
+                                            fontSize: 15,
+                                          ),
+                                    ),
+                                  ).animate().fadeIn(delay: 500.ms),
                                 ),
-                              );
-                            },
-                            icon: const Icon(Icons.copy, size: 16),
-                            label: const Text('Copy all words'),
-                          ).animate().fadeIn(delay: 200.ms),
+                                const SizedBox(height: 8),
 
-                          const SizedBox(height: 16),
-
-                          ElevatedButton(
-                            onPressed: _markBackedUp,
-                            child: const Text("I've saved my recovery phrase"),
-                          ).animate().fadeIn(delay: 300.ms),
+                                // Create wallet
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 420,
+                                  ),
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: const Size(0, 48),
+                                      side: BorderSide(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface.withOpacity(0),
+                                        width: 0,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    onPressed: _markBackedUp,
+                                    label: Center(
+                                      child: Text(
+                                        'I\'ve saved my recovery phrase',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withOpacity(.95),
+                                              fontSize: 15,
+                                            ),
+                                      ),
+                                    ),
+                                  ).animate().fadeIn(delay: 500.ms),
+                                ),
+                              ],
+                            ),
+                          ),
 
                           const SizedBox(height: 32),
                         ],
@@ -291,9 +366,9 @@ class _RecoveryPhraseScreenState extends State<RecoveryPhraseScreen>
                     // Blur overlay when backgrounded
                     if (_blurred)
                       InkWell(
-  splashColor: Colors.transparent,
-  highlightColor: Colors.transparent,
-  hoverColor: Colors.transparent,
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
                         onTap: _reAuthenticate,
                         child: Container(
                           color: Theme.of(

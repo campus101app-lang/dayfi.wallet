@@ -61,8 +61,25 @@ class OnboardingScreen extends StatelessWidget {
                   opacity: .45,
                   child: Image.asset("assets/images/word_logo.png", width: 88),
                 ),
-                const Spacer(flex: 4),
+                const Spacer(flex: 2),
 
+                ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withOpacity(1),
+                      Colors.white.withOpacity(0.2),
+                    ],
+                  ).createShader(bounds),
+                  blendMode: BlendMode.modulate,
+                  child: Image.asset(
+                    "assets/images/stellar_onb.png",
+                    width: 300,
+                  ),
+                ).animate().fadeIn(duration: 600.ms),
+
+                const Spacer(flex: 2),
                 // Headline
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -112,86 +129,91 @@ class OnboardingScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       // Create wallet
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: Size(
-                            MediaQuery.of(context).size.width,
-                            48,
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: Size(
+                              MediaQuery.of(context).size.width,
+                              48,
+                            ),
+                            side: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(.90),
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          side: BorderSide(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(.90),
-                            width: 1.5,
+                          onPressed: () => context.push(
+                            '/auth/email',
+                            extra: {'isNewUser': true},
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => context.push(
-                          '/auth/email',
-                          extra: {'isNewUser': true},
-                        ),
-                        icon: SvgPicture.asset(
-                          "assets/icons/svgs/wallet.svg",
-                          height: 20,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(.90),
-                        ),
-                        label: Text(
-                          'Create a New Wallet',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(.95),
-                                fontSize: 15,
-                              ),
-                        ),
-                      ).animate().fadeIn(delay: 500.ms),
-
-                      const SizedBox(height: 8),
-
-                      // Create wallet
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                          side: BorderSide(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0),
-                            width: 1.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => context.push(
-                          '/auth/email',
-                          extra: {'isNewUser': true},
-                        ),
-                        icon: RotatedBox(
-                          quarterTurns: 1,
-                          child: SvgPicture.asset(
-                            "assets/icons/svgs/login.svg",
+                          icon: SvgPicture.asset(
+                            "assets/icons/svgs/wallet.svg",
                             height: 20,
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withOpacity(.90),
                           ),
-                        ),
-                        label: Text(
-                          'Log in to existing wallet',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(.95),
-                                fontSize: 15,
-                              ),
-                        ),
-                      ).animate().fadeIn(delay: 500.ms),
+                          label: Text(
+                            'Create a New Wallet',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(.95),
+                                  fontSize: 15,
+                                ),
+                          ),
+                        ).animate().fadeIn(delay: 500.ms),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Create wallet
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                            side: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0),
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () => context.push(
+                            '/auth/email',
+                            extra: {'isNewUser': true},
+                          ),
+                          icon: RotatedBox(
+                            quarterTurns: 1,
+                            child: SvgPicture.asset(
+                              "assets/icons/svgs/login.svg",
+                              height: 20,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(.90),
+                            ),
+                          ),
+                          label: Text(
+                            'Log in to existing wallet',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(.95),
+                                  fontSize: 15,
+                                ),
+                          ),
+                        ).animate().fadeIn(delay: 500.ms),
+                      ),
                     ],
                   ),
                 ),

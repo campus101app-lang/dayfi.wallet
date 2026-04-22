@@ -37,6 +37,21 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
   String _lastModifiedField = 'from';
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-select USDC as "from" asset if user has USDC balance
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final wallet = ref.read(walletProvider);
+      if (wallet.usdcBalance > 0) {
+        setState(() {
+          _fromAsset = 'USDC';
+          _toAsset = 'XLM';
+        });
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _fromAmountController.dispose();
     _toAmountController.dispose();
@@ -245,7 +260,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
             'Insufficient $_fromAsset balance. '
             'Available: ${_availableFor(_fromAsset).toStringAsFixed(6)}',
           ),
-          backgroundColor: DayFiColors.red,
+          backgroundColor: const Color(0xFFFFA726),
         ),
       );
       return;
@@ -350,7 +365,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(displayMsg),
-            backgroundColor: DayFiColors.red,
+            backgroundColor: const Color(0xFFFFA726),
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: 'Retry',
@@ -479,35 +494,65 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
             if (result['transaction']?['hash'] != null)
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 48),
-                    side: BorderSide(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                      side: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(.90),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      launchUrl(
+                        Uri.parse(
+                          'https://stellar.expert/explorer/public/tx/${result['transaction']?['hash']}',
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.open_in_new,
+                      size: 18,
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface.withOpacity(.90),
-                      width: 1.5,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    label: Text(
+                      'View on Chain',
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(.90),
+                            fontSize: 15,
+                          ),
                     ),
                   ),
+                ).animate().fadeIn(delay: 500.ms),
+              ),
+
+            const SizedBox(height: 10),
+
+            // Done button — no border, full width
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
+
                   onPressed: () {
-                    launchUrl(
-                      Uri.parse(
-                        'https://stellar.expert/explorer/public/tx/${result['transaction']?['hash']}',
-                      ),
-                    );
+                    Navigator.pop(context);
+                    context.go('/home');
                   },
-                  icon: Icon(
-                    Icons.open_in_new,
-                    size: 18,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(.90),
-                  ),
-                  label: Text(
-                    'View on Chain',
+                  child: Text(
+                    'Done',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       color: Theme.of(
                         context,
@@ -516,31 +561,8 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                     ),
                   ),
                 ),
-              ).animate().fadeIn(delay: 500.ms),
-
-            const SizedBox(height: 10),
-
-            // Done button — no border, full width
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
-
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.go('/home');
-                },
-                child: Text(
-                  'Done',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(.90),
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ).animate().fadeIn(delay: 600.ms),
+              ).animate().fadeIn(delay: 600.ms),
+            ),
           ],
         ),
       ),
@@ -700,64 +722,67 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                         ),
                       ),
                       Expanded(
-                        child: TextField(
-                          controller: _fromAmountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          onChanged: (val) =>
-                              _onAmountChanged(val, field: 'from'),
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(.85),
-                                fontSize: 18,
-                                letterSpacing: -.1,
-                                fontWeight: FontWeight.w500,
-                              ),
-                          decoration: InputDecoration(
-                            hintText: '0.00',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: TextField(
+                            controller: _fromAmountController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 24,
-                              horizontal: 6,
-                            ),
-                            fillColor: Colors.transparent,
-
-                            hintStyle: Theme.of(context).textTheme.bodyMedium
+                            onChanged: (val) =>
+                                _onAmountChanged(val, field: 'from'),
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: Theme.of(
                                     context,
-                                  ).colorScheme.onSurface.withOpacity(.35),
+                                  ).colorScheme.onSurface.withOpacity(.85),
                                   fontSize: 18,
                                   letterSpacing: -.1,
+                                  fontWeight: FontWeight.w500,
                                 ),
+                            decoration: InputDecoration(
+                              hintText: '0.00',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              disabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 24,
+                                horizontal: 6,
+                              ),
+                              fillColor: Colors.transparent,
+
+                              hintStyle: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(.35),
+                                    fontSize: 18,
+                                    letterSpacing: -.1,
+                                  ),
+                            ),
+                            textAlign: TextAlign.end,
                           ),
-                          textAlign: TextAlign.end,
                         ),
                       ),
                     ],
@@ -789,7 +814,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                           : 'Available: ${available.toStringAsFixed(_fromAsset == 'XLM' ? 4 : 6)} $_fromAsset',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: _hasInsufficientBalance
-                            ? DayFiColors.red
+                            ? const Color(0xFFFFA726)
                             : Theme.of(
                                 context,
                               ).colorScheme.onSurface.withOpacity(0.4),
@@ -905,65 +930,68 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                         ),
                       ),
                       Expanded(
-                        child: TextField(
-                          controller: _toAmountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          onChanged: (val) =>
-                              _onAmountChanged(val, field: 'to'),
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(.85),
-                                fontSize: 18,
-                                letterSpacing: -.1,
-                                fontWeight: FontWeight.w500,
-                              ),
-                          decoration: InputDecoration(
-                            hintText: _loadingQuote ? '...' : '0.00',
-
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 24,
-                              horizontal: 6,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: TextField(
+                            controller: _toAmountController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
                             ),
-                            fillColor: Colors.transparent,
-                            hintStyle: Theme.of(context).textTheme.bodyMedium
+                            onChanged: (val) =>
+                                _onAmountChanged(val, field: 'to'),
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: Theme.of(
                                     context,
-                                  ).colorScheme.onSurface.withOpacity(.35),
+                                  ).colorScheme.onSurface.withOpacity(.85),
                                   fontSize: 18,
                                   letterSpacing: -.1,
+                                  fontWeight: FontWeight.w500,
                                 ),
+                            decoration: InputDecoration(
+                              hintText: _loadingQuote ? '...' : '0.00',
 
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 24,
+                                horizontal: 6,
+                              ),
+                              fillColor: Colors.transparent,
+                              hintStyle: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(.35),
+                                    fontSize: 18,
+                                    letterSpacing: -.1,
+                                  ),
+
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              disabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
+                            textAlign: TextAlign.end,
                           ),
-                          textAlign: TextAlign.end,
                         ),
                       ),
                     ],
@@ -1021,59 +1049,63 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
 
                 const SizedBox(height: 20),
                 // Swap button
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 48),
-                    side: BorderSide(
-                      color:
-                          (_quote == null ||
-                              _executing ||
-                              _hasInsufficientBalance ||
-                              walletEmpty)
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(.45)
-                          : Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(.90),
-                      width: 1.5,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed:
-                      (_quote == null ||
-                          _executing ||
-                          _hasInsufficientBalance ||
-                          walletEmpty)
-                      ? null
-                      : _executeSwap,
-
-                  label: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        _quote != null
-                            ? 'Swap $_fromAsset → $_toAsset'
-                            : 'Enter amount to get quote',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color:
-                              (_quote == null ||
-                                  _executing ||
-                                  _hasInsufficientBalance ||
-                                  walletEmpty)
-                              ? Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(.45)
-                              : Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(.90),
-                          fontSize: 15,
-                        ),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                      side: BorderSide(
+                        color:
+                            (_quote == null ||
+                                _executing ||
+                                _hasInsufficientBalance ||
+                                walletEmpty)
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(.45)
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(.90),
+                        width: 1.5,
                       ),
-                    ],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed:
+                        (_quote == null ||
+                            _executing ||
+                            _hasInsufficientBalance ||
+                            walletEmpty)
+                        ? null
+                        : _executeSwap,
+
+                    label: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          _quote != null
+                              ? 'Swap $_fromAsset → $_toAsset'
+                              : 'Enter amount to get quote',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color:
+                                    (_quote == null ||
+                                        _executing ||
+                                        _hasInsufficientBalance ||
+                                        walletEmpty)
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(.45)
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(.90),
+                                fontSize: 15,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 

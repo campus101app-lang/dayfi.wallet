@@ -54,7 +54,7 @@ class _BackupScreenState extends State<BackupScreen> {
 
                 // Title
                 Text(
-                  'Back up your wallet',
+                  'Save your recovery phrase',
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
@@ -68,7 +68,7 @@ class _BackupScreenState extends State<BackupScreen> {
 
                 // Subtitle
                 Text(
-                  'Save your 12-word recovery phrase. Without it, you cannot recover your wallet if you lose your phone.',
+                  'This is your seed phrase. Manually save these 12 words somewhere safe. Without them, you cannot recover your wallet.',
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     fontSize: 16,
                     letterSpacing: -0.3,
@@ -81,21 +81,21 @@ class _BackupScreenState extends State<BackupScreen> {
 
                 // Continue button
                 AuthButton(
-                  label: 'Back Up Now',
+                  label: 'View & Save Phrase',
                   onPressed: _loading
                       ? null
                       : () => context.push('/security/phrase'),
                   isLoading: _loading,
-                  loadingText: 'Backing up...',
+                  loadingText: 'Loading...',
                 ),
 
                 const SizedBox(height: 10),
 
-                // Skip button
+                // Done button
                 TextButton(
                   onPressed: () => context.go('/home'),
                   child: Text(
-                    'Skip for now',
+                    'Done',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 15,
                       color: Theme.of(

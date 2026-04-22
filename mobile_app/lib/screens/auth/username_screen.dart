@@ -183,7 +183,9 @@ class _UsernameScreenState extends State<UsernameScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
+                      child:    ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child:  TextField(
                         controller: _controller,
                         autocorrect: false,
                         textInputAction: TextInputAction.done,
@@ -264,7 +266,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                           ),
                         ),
                       ),
-                    ),
+                    ),),
                     const SizedBox(width: 8),
                     Text(
                       '@dayfi.me',

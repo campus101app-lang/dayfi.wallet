@@ -11,6 +11,71 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 
+// Helper functions
+String _getAssetDisplayName(String asset) {
+  switch (asset.toUpperCase()) {
+    case 'USDC':
+      return 'Digital Dollar';
+    case 'XLM':
+      return 'Stellar Lumen';
+    default:
+      return asset;
+  }
+}
+
+String _getCurrencyLogoAsset(String asset) {
+  switch (asset.toUpperCase()) {
+    case 'USDC':
+      return 'assets/images/usdc.png';
+    case 'XLM':
+      return 'assets/images/stellar.png';
+    default:
+      return 'assets/images/stellar.png';
+  }
+}
+
+String _getStatusLabel(String? status) {
+  switch (status?.toLowerCase()) {
+    case 'confirmed':
+      return 'Success';
+    case 'failed':
+      return 'Failed';
+    case 'in_progress':
+    case 'pending':
+      return 'In Progress';
+    default:
+      return 'Completed';
+  }
+}
+
+Color _getStatusColor(BuildContext context, String? status) {
+  switch (status?.toLowerCase()) {
+    case 'confirmed':
+      return Theme.of(context).colorScheme.primary.withOpacity(.65);
+    case 'failed':
+      return DayFiColors.red;
+    case 'in_progress':
+    case 'pending':
+      return const Color(0xFFFFA726); // Orange/Yellow
+    default:
+      return Theme.of(context).colorScheme.primary;
+  }
+}
+
+String _getUsdAmount(double amount, String asset) {
+  // USDC is 1:1 with USD
+  if (asset.toUpperCase() == 'USDC') {
+    return '\$${amount.toStringAsFixed(2)}';
+  }
+  // For XLM, use current rate (approximately 0.25 USD per XLM - update as needed)
+  if (asset.toUpperCase() == 'XLM') {
+    const xlmToUsd = 0.25; // Update with real-time rate from your backend
+    final usdAmount = amount * xlmToUsd;
+    return '\$${usdAmount.toStringAsFixed(2)}';
+  }
+  return '\$0.00';
+}
+
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
 
@@ -536,7 +601,9 @@ void _showTxDetails(BuildContext context, Map<String, dynamic> tx) {
   final isSwap = tx['type'] == 'swap';
   final amount = (tx['amount'] as num).toDouble();
   final asset = tx['asset'] as String;
+  final assetDisplayName = _getAssetDisplayName(asset);
   final swapToAsset = (tx['swapToAsset'] as String?) ?? '';
+  final swapToAssetDisplayName = _getAssetDisplayName(swapToAsset);
   final swapToAmount = (tx['receivedAmount'] ?? tx['swapToAmount']) != null
       ? ((tx['receivedAmount'] ?? tx['swapToAmount']) as num).toDouble()
       : null;
@@ -544,6 +611,8 @@ void _showTxDetails(BuildContext context, Map<String, dynamic> tx) {
   final txHash = tx['stellarTxHash'] as String?;
   final memo = tx['memo'] as String?;
   final fee = tx['fee'] as String?;
+  final status = tx['status'] as String?;
+  final toUsername = tx['toUsername'] as String?;
 
   showDayFiBottomSheet(
     context: context,
@@ -572,29 +641,82 @@ void _showTxDetails(BuildContext context, Map<String, dynamic> tx) {
           ),
           const SizedBox(height: 32),
 
-          SvgPicture.asset(
-            isSwap
-                ? 'assets/icons/svgs/swap.svg'
-                : (isSend
-                      ? 'assets/icons/svgs/arrow_out.svg'
-                      : 'assets/icons/svgs/arrow_in.svg'),
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(.55),
-            width: 24,
-            height: 24,
+          // Icon with stacked currency logo
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 54,
+                height: 54,
+                child: Center(
+                  child: SvgPicture.asset(
+                    isSwap
+                        ? 'assets/icons/svgs/swap.svg'
+                        : (isSend
+                              ? 'assets/icons/svgs/send.svg'
+                              : 'assets/icons/svgs/receive.svg'),
+                    color: _getStatusColor(context, status),
+                    width: 40,
+                    height: 40,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.asset(
+                      _getCurrencyLogoAsset(asset),
+                      width: 18,
+                      height: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // Info
+          // Transaction type and asset name
+          Text(
+            isSwap
+                ? 'Swapped $asset → $swapToAsset'
+                : '${isSend ? 'Sent ' : 'Received '}$assetDisplayName',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Amount and status
           Text(
             isSwap
                 ? '$amount $asset → ${swapToAmount != null ? '${swapToAmount.toStringAsFixed(2)} ' : ''}$swapToAsset'
-                : '${isSend ? '-' : '+'}${amount.toStringAsFixed(2)} $asset',
+                : '${amount.toStringAsFixed(2)} $asset',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               color: isSwap
                   ? Theme.of(context).colorScheme.primary
                   : (isSend ? DayFiColors.red : DayFiColors.green),
               fontWeight: FontWeight.w600,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Status badge
+          Text(
+            status!.toLowerCase() == "confirmed"
+                ? DateFormat('h:mm a').format(createdAt.toLocal())
+                : _getStatusLabel(status),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: _getStatusColor(context, status),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
           ),
 
@@ -605,11 +727,8 @@ void _showTxDetails(BuildContext context, Map<String, dynamic> tx) {
             label: 'Type',
             value: isSwap ? 'Swapped' : (isSend ? 'Sent' : 'Received'),
           ),
-          if (tx['toUsername'] != null)
-            _DetailRow(
-              label: isSend ? 'To' : 'From',
-              value: '@${tx['toUsername']}',
-            ),
+          if (toUsername != null)
+            _DetailRow(label: isSend ? 'To' : 'From', value: '@$toUsername'),
           _DetailRow(
             label: 'Date',
             value: DateFormat(
@@ -633,40 +752,43 @@ void _showTxDetails(BuildContext context, Map<String, dynamic> tx) {
           if (txHash != null)
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 48),
-                  side: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(.90),
-                    width: 1.5,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  launchUrl(
-                    Uri.parse(
-                      'https://stellar.expert/explorer/public/tx/$txHash',
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                    side: BorderSide(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(.90),
+                      width: 1.5,
                     ),
-                  );
-                },
-                icon: Icon(
-                  Icons.open_in_new,
-                  size: 18,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(.90),
-                ),
-                label: Text(
-                  'View on Stellar Expert',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    launchUrl(
+                      Uri.parse(
+                        'https://stellar.expert/explorer/public/tx/$txHash',
+                      ),
+                    );
+                  },
+                  icon: Icon(
+                    Icons.open_in_new,
+                    size: 18,
                     color: Theme.of(
                       context,
                     ).colorScheme.onSurface.withOpacity(.90),
-                    fontSize: 15,
+                  ),
+                  label: Text(
+                    'View on Stellar Expert',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(.90),
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ),
@@ -733,60 +855,136 @@ class _TxTile extends StatelessWidget {
     final isSwap = tx['type'] == 'swap';
     final amount = (tx['amount'] as num).toDouble();
     final asset = tx['asset'] as String;
+    final assetDisplayName = _getAssetDisplayName(asset);
     final swapToAsset = (tx['swapToAsset'] as String?) ?? '';
+    final swapToAssetDisplayName = _getAssetDisplayName(swapToAsset);
     final swapToAmount = (tx['receivedAmount'] ?? tx['swapToAmount']) != null
         ? ((tx['receivedAmount'] ?? tx['swapToAmount']) as num).toDouble()
         : null;
     final createdAt =
         DateTime.tryParse(tx['createdAt'] ?? '') ?? DateTime.now();
     final toUsername = tx['toUsername'] as String?;
-    final memo = tx['memo'] as String?;
+    final status = tx['status'] as String?;
 
     return GestureDetector(
       onTap: () => _showTxDetails(context, tx),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+        padding: const EdgeInsets.only(left: 6, right: 16, top: 12, bottom: 12),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
-            // Icon
-            SvgPicture.asset(
-              isSwap
-                  ? 'assets/icons/svgs/swap.svg'
-                  : (isSend
-                        ? 'assets/icons/svgs/arrow_out.svg'
-                        : 'assets/icons/svgs/arrow_in.svg'),
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(.55),
-              width: 18,
-              height: 18,
+            // Icon with stacked currency logo
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  // decoration: BoxDecoration(
+                  //   color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                  //   borderRadius: BorderRadius.circular(12),
+                  // ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      isSwap
+                          ? 'assets/icons/svgs/swap.svg'
+                          : (isSend
+                                ? 'assets/icons/svgs/send.svg'
+                                : 'assets/icons/svgs/receive.svg'),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(.75),
+                      width: 24,
+                      height: 24,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.asset(
+                        _getCurrencyLogoAsset(asset),
+                        width: 14,
+                        height: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
 
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
 
-            // Info
+            // Info column
             Expanded(
-              child: Text(
-                isSwap
-                    ? '$amount $asset → ${swapToAmount != null ? '${swapToAmount.toStringAsFixed(2)} ' : ''}$swapToAsset'
-                    : '${isSend ? '-' : '+'}${amount.toStringAsFixed(2)} $asset',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: isSwap
-                      ? Theme.of(context).colorScheme.primary
-                      : (isSend ? DayFiColors.red : DayFiColors.green),
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Transaction type and asset name
+                  Text(
+                    isSwap
+                        ? 'Swapped $asset → $swapToAsset'
+                        : '${isSend ? 'Sent ' : 'Received '}$assetDisplayName',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(.95),
+                      letterSpacing: -.1,
+                    ),
+                  ),
+
+                  Text(
+                    status?.toLowerCase() == "confirmed"
+                        ? DateFormat('h:mm a').format(createdAt.toLocal())
+                        : _getStatusLabel(status),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: _getStatusColor(context, status),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            // Amount
-            Text(
-              "${DateFormat('h:mm a').format(createdAt.toLocal())} ",
-              style: Theme.of(context).textTheme.bodySmall,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // USD Amount
+                Text(
+                  _getUsdAmount(amount, asset),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(1),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                // Coin Amount
+                Text(
+                  isSwap
+                      ? '$amount $asset → ${swapToAmount != null ? '${swapToAmount.toStringAsFixed(2)} ' : ''}$swapToAsset'
+                      : '${amount.toStringAsFixed(2)} $asset',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(.65),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
+
+            // Time
           ],
         ),
       ).animate().fadeIn(delay: Duration(milliseconds: index * 50)),

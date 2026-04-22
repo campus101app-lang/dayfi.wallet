@@ -235,7 +235,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'Backup your account to iCloud',
+                                    'Save your recovery phrase',
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: const Color.fromARGB(

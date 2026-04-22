@@ -6,9 +6,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+// import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_app/widgets/app_background.dart';
-import '../../models/asset.dart';
+import 'package:url_launcher/url_launcher.dart';
+// import '../../models/asset.dart';
 import '../../providers/wallet_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
@@ -130,26 +131,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               await ref.read(walletProvider.notifier).refresh();
               ref.invalidate(userProvider);
             },
-            child: SizedBox(
-              height:
-                  MediaQuery.of(context).size.height -
-                  MediaQuery.of(context).padding.top -
-                  MediaQuery.of(context).padding.bottom,
-              child: Column(
-                children: [
-                  const Spacer(flex: 4),
-                  _buildBalanceLabel(),
-                  const SizedBox(height: 16),
-                  _buildTotalBalance(walletState),
-                  const SizedBox(height: 16),
-                  _buildPortfolioChip(walletState),
-                  const SizedBox(height: 32),
-                  _buildTransactionsLink(),
-                  const Spacer(flex: 4),
-                  _buildActionRow(),
-                  const SizedBox(height: 20),
-                ],
-              ),
+            child: ListView(
+              physics: const ClampingScrollPhysics(),
+              children: [
+                SizedBox(
+                  height:
+                      MediaQuery.of(context).size.height -
+                      54 -
+                      (MediaQuery.of(context).padding.top +
+                          MediaQuery.of(context).padding.bottom),
+                  child: Column(
+                    children: [
+                      const Spacer(flex: 4),
+                      _buildBalanceLabel(),
+                      const SizedBox(height: 16),
+                      _buildTotalBalance(walletState),
+                      const SizedBox(height: 16),
+                      _buildPortfolioChip(walletState),
+                      const SizedBox(height: 32),
+                      _buildTransactionsLink(),
+                      const Spacer(flex: 4),
+                      _buildActionRow(),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -381,6 +388,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       heldAssets.add('assets/images/usdc.png');
     }
 
+    final assets = ['assets/images/stellar.png', 'assets/images/usdc.png'];
+
     return InkWell(
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
@@ -399,10 +408,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 16.0 + (heldAssets.length * 16.0),
+              width: 16.0 + (assets.length * 16.0),
               height: 26,
               child: Stack(
-                children: List.generate(heldAssets.length, (i) {
+                children: List.generate(assets.length, (i) {
                   return Positioned(
                     left: i * 16.0,
                     child: Container(
@@ -416,9 +425,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(24),
                           child: Image.asset(
-                            heldAssets[i],
+                            assets[i],
                             fit: BoxFit.contain,
-                            height: heldAssets[i] == "assets/images/stellar.png"
+                            height: assets[i] == "assets/images/stellar.png"
                                 ? 20
                                 : 24,
                           ),
@@ -487,7 +496,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ─── Action row ──────────────────────────────────────────
 
+  void _handleSendTap(WalletState walletState) {
+    if (walletState.usdcBalance == 0 && walletState.xlmBalance == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Cannot send: wallet has no balance'),
+          backgroundColor: Color(0xFFFFA726),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    context.push('/send');
+  }
+
+  void _handleSwapTap(WalletState walletState) {
+    if (walletState.usdcBalance == 0 && walletState.xlmBalance == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Cannot swap: wallet has no balance'),
+          backgroundColor: Color(0xFFFFA726),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    context.push('/swap');
+  }
+
   Widget _buildActionRow() {
+    final walletState = ref.watch(walletProvider);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 72),
       child: Container(
@@ -509,12 +548,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _ActionButton(
               icon: "assets/icons/svgs/swap.svg",
               label: 'Swap',
-              onTap: () => context.push('/swap'),
+              onTap: () => _handleSwapTap(walletState),
             ),
             _ActionButton(
               icon: "assets/icons/svgs/send.svg",
               label: 'Send',
-              onTap: () => context.push('/send'),
+              onTap: () => _handleSendTap(walletState),
             ),
           ],
         ),
@@ -547,7 +586,7 @@ class _MenuOverlay extends StatelessWidget {
     ('transactions', '/transactions'),
     ('security', '/security'),
     ('settings', '/settings'),
-    ('support', null),
+    ('support', 'https://dayfi.co/support'),
   ];
 
   @override
@@ -621,7 +660,15 @@ class _MenuOverlay extends StatelessWidget {
                           hoverColor: Colors.transparent,
                           // behavior: HitTestBehavior.opaque,
                           onTap: () {
-                            onNavigate(item.$2);
+                            final dest = item.$2;
+                            if (dest.startsWith('http')) {
+                              launchUrl(
+                                Uri.parse(dest),
+                                mode: LaunchMode.externalApplication,
+                              );
+                            } else {
+                              onNavigate(dest);
+                            }
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 24),
