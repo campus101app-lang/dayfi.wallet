@@ -14,7 +14,7 @@ import sep24Routes       from './routes/sep24.js';
 import sep38Routes       from './routes/sep38.js';
 import tomlRoutes        from './routes/toml.js';
 import { errorHandler }  from './middleware/errorHandler.js';
-import inventoryRoutes from './routes/inventoryRoutes.js';
+import inventoryRoutes from './routes/inventory.js';
 
 dotenv.config();
 
