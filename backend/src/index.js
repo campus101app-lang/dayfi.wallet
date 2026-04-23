@@ -14,6 +14,7 @@ import sep24Routes       from './routes/sep24.js';
 import sep38Routes       from './routes/sep38.js';
 import tomlRoutes        from './routes/toml.js';
 import { errorHandler }  from './middleware/errorHandler.js';
+import inventoryRoutes from './routes/inventoryRoutes.js';
 
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/sep10', sep10Limiter, sep10Routes);
 app.use('/sep24', sep24Routes);
 app.use('/sep38', sep38Routes);
+app.use('/api/inventory', inventoryRoutes);
 
 // ─── Public Username Resolution ───────────────────────────────────────────────
 
