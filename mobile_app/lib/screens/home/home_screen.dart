@@ -6,9 +6,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+<<<<<<< HEAD
 // import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_app/widgets/app_background.dart';
 import 'package:url_launcher/url_launcher.dart';
+=======
+import 'package:google_fonts/google_fonts.dart';
+// import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_app/widgets/app_background.dart';
+>>>>>>> qa
 // import '../../models/asset.dart';
 import '../../providers/wallet_provider.dart';
 import '../../theme/app_theme.dart';
@@ -125,7 +131,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.only(bottom: 32.0),
+          child: _buildActionRow(),
+        ),
         body: SafeArea(
+          bottom: false,
           child: RefreshIndicator(
             onRefresh: () async {
               await ref.read(walletProvider.notifier).refresh();
@@ -135,11 +146,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               physics: const ClampingScrollPhysics(),
               children: [
                 SizedBox(
+<<<<<<< HEAD
                   height:
                       MediaQuery.of(context).size.height -
                       54 -
                       (MediaQuery.of(context).padding.top +
                           MediaQuery.of(context).padding.bottom),
+=======
+                  height: MediaQuery.of(context).size.height - 154,
+
+>>>>>>> qa
                   child: Column(
                     children: [
                       const Spacer(flex: 4),
@@ -150,9 +166,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _buildPortfolioChip(walletState),
                       const SizedBox(height: 32),
                       _buildTransactionsLink(),
-                      const Spacer(flex: 4),
-                      _buildActionRow(),
-                      const SizedBox(height: 20),
+                      const Spacer(flex: 5),
+
+                      // const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -242,7 +258,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           Text(
             '\$—',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            style: GoogleFonts.bricolageGrotesque(
               fontSize: 64,
               fontWeight: FontWeight.w400,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(.40),
@@ -289,20 +305,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 10),
+          padding: const EdgeInsets.only(top: 0),
           child: Text(
             '\$',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            style: GoogleFonts.bricolageGrotesque(
               fontWeight: FontWeight.w400,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(.60),
               letterSpacing: 0.4,
-              fontSize: 28,
+              fontSize: 26,
             ),
           ),
         ),
         Text(
           whole,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          style: GoogleFonts.bricolageGrotesque(
             fontSize: 64,
             fontWeight: FontWeight.w400,
             color: Theme.of(context).colorScheme.onSurface.withOpacity(opacity),
@@ -314,13 +330,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: const EdgeInsets.only(top: 12),
           child: Text(
             decimal,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            style: GoogleFonts.bricolageGrotesque(
               fontWeight: FontWeight.w400,
-              fontSize: 28,
+              fontSize: 32,
               color: Theme.of(
                 context,
               ).colorScheme.onSurface.withOpacity(opacity),
               letterSpacing: 0.4,
+              height:1.2
             ),
           ),
         ),
