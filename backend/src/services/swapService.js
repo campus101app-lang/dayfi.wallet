@@ -5,7 +5,8 @@
 //   Cross-chain swaps         → Changelly API
 
 import StellarSdk from "@stellar/stellar-sdk";
-import { PrismaClient } from "@prisma/client";
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 import crypto from "crypto";
 
 const prisma = new PrismaClient();

@@ -1,7 +1,8 @@
 import StellarSdk from "@stellar/stellar-sdk";
 import StellarHDWallet from "stellar-hd-wallet";
 import crypto from "crypto";
-import { PrismaClient } from "@prisma/client";
+import pkg from "@prisma/client";
+const { PrismaClient } = pkg;
 import {
   sendPaymentSentEmail,
   sendPaymentReceivedEmail,
