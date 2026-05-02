@@ -1,5 +1,6 @@
 // src/services/inventoryService.js
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 import admin from 'firebase-admin';
 
 const prisma = new PrismaClient();

@@ -12,7 +12,8 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticate } from '../middleware/auth.js';
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 import { sendAssetFromMasterWallet } from '../services/walletService.js';
 
 const router = express.Router();

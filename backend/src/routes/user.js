@@ -1,6 +1,7 @@
 // src/routes/user.js
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();

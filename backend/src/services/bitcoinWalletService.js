@@ -7,7 +7,8 @@ import * as ecc from 'tiny-secp256k1';
 import { BIP32Factory } from 'bip32';
 import * as bip39 from 'bip39';
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 
 bitcoin.initEccLib(ecc);
 const bip32 = BIP32Factory(ecc);

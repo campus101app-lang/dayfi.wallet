@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 import jwt from 'jsonwebtoken';
 import { sendOTP, sendWelcomeEmail } from '../services/emailService.js';
 import {

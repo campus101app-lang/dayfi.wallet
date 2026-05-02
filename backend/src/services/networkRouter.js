@@ -7,7 +7,8 @@ import { sendEVMToken, getEVMBalances, getEVMNetworks, createEVMWallet } from '.
 import { sendBitcoin, getBitcoinBalance, createBitcoinWallet } from './bitcoinWalletService.js';
 import { sendSolanaUSDC, sendSOL, getSolanaBalances, createSolanaWallet } from './solanaWalletService.js';
 import { createStellarWallet } from './walletService.js';
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 
 const prisma = new PrismaClient();
 

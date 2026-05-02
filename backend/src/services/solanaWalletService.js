@@ -20,7 +20,8 @@ import {
   getMint,
 } from '@solana/spl-token';
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 import bs58 from 'bs58';
 
 const prisma = new PrismaClient();
