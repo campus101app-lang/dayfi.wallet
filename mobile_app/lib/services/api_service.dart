@@ -10,10 +10,10 @@ class ApiService {
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
-  late final Dio _dio;
+  late final Dio dio;
 
   ApiService() {
-    _dio = Dio(
+    dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 30),
@@ -22,7 +22,7 @@ class ApiService {
       ),
     );
 
-    _dio.interceptors.add(
+    dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           final token = await _storage.read(key: 'auth_token');
@@ -41,22 +41,22 @@ class ApiService {
 
   // ─── Auth ────────────────────────────────────────────────
   Future<Map<String, dynamic>> sendOtp(String email) async =>
-      (await _dio.post('/api/auth/send-otp', data: {'email': email})).data;
+      (await dio.post('/api/auth/send-otp', data: {'email': email})).data;
 
   Future<Map<String, dynamic>> verifyOtp(String email, String otp) async =>
-      (await _dio.post(
+      (await dio.post(
         '/api/auth/verify-otp',
         data: {'email': email, 'otp': otp},
       )).data;
 
   Future<Map<String, dynamic>> checkUsername(String username) async =>
-      (await _dio.get('/api/auth/check-username/$username')).data;
+      (await dio.get('/api/auth/check-username/$username')).data;
 
   Future<Map<String, dynamic>> setupUsername(
     String username,
     String setupToken,
   ) async {
-    final res = await _dio.post(
+    final res = await dio.post(
       '/api/auth/setup-username',
       data: {'username': username, 'setupToken': setupToken},
     );
@@ -66,30 +66,30 @@ class ApiService {
 
   // ─── User ─────────────────────────────────────────────────
   Future<Map<String, dynamic>> getMe() async =>
-      (await _dio.get('/api/user/me')).data;
+      (await dio.get('/api/user/me')).data;
 
   Future<void> registerDeviceToken(String token, String platform) async =>
-      _dio.post(
+      dio.post(
         '/api/user/device-token',
         data: {'token': token, 'platform': platform},
       );
 
   // ─── Wallet ───────────────────────────────────────────────
   Future<Map<String, dynamic>> getBalance() async =>
-      (await _dio.get('/api/wallet/balance')).data;
+      (await dio.get('/api/wallet/balance')).data;
 
   Future<Map<String, dynamic>> getAddress() async =>
-      (await _dio.get('/api/wallet/address')).data;
+      (await dio.get('/api/wallet/address')).data;
 
   Future<Map<String, dynamic>> getNetworkConfig() async =>
-      (await _dio.get('/api/wallet/networks')).data;
+      (await dio.get('/api/wallet/networks')).data;
 
   Future<Map<String, dynamic>> sendFunds({
     required String to,
     required double amount,
     required String asset,
     String? memo,
-  }) async => (await _dio.post(
+  }) async => (await dio.post(
     '/api/wallet/send',
     data: {
       'to': to,
@@ -100,7 +100,7 @@ class ApiService {
   )).data;
 
   Future<Map<String, dynamic>> resolveRecipient(String identifier) async =>
-      (await _dio.get('/api/wallet/resolve/$identifier')).data;
+      (await dio.get('/api/wallet/resolve/$identifier')).data;
 
   // ─── Transactions ─────────────────────────────────────────
   Future<Map<String, dynamic>> getTransactions({
@@ -108,7 +108,7 @@ class ApiService {
     int limit = 20,
     String? type,
     String? asset,
-  }) async => (await _dio.get(
+  }) async => (await dio.get(
     '/api/transactions',
     queryParameters: {
       'page': page,
@@ -124,7 +124,7 @@ class ApiService {
     required String buyAsset,
     double? sellAmount,
     double? buyAmount,
-  }) async => (await _dio.get(
+  }) async => (await dio.get(
     '/sep38/price',
     queryParameters: {
       'sell_asset': sellAsset,
@@ -137,7 +137,7 @@ class ApiService {
   Future<Map<String, dynamic>> getPrices({
     required String sellAsset,
     required double sellAmount,
-  }) async => (await _dio.get(
+  }) async => (await dio.get(
     '/sep38/prices',
     queryParameters: {
       'sell_asset': sellAsset,
@@ -150,7 +150,7 @@ class ApiService {
     required String assetCode,
     required String account,
     double? amount,
-  }) async => (await _dio.post(
+  }) async => (await dio.post(
     '/sep24/transactions/deposit/interactive',
     data: {
       'asset_code': assetCode,
@@ -163,7 +163,7 @@ class ApiService {
     required String assetCode,
     required String account,
     double? amount,
-  }) async => (await _dio.post(
+  }) async => (await dio.post(
     '/sep24/transactions/withdraw/interactive',
     data: {
       'asset_code': assetCode,
@@ -173,17 +173,14 @@ class ApiService {
   )).data;
 
   Future<Map<String, dynamic>> getDepositStatus(String txId) async =>
-      (await _dio.get(
-        '/sep24/transaction',
-        queryParameters: {'id': txId},
-      )).data;
+      (await dio.get('/sep24/transaction', queryParameters: {'id': txId})).data;
 
   // ─── Swap ─────────────────────────────────────────────────
   Future<Map<String, dynamic>> getSwapQuote({
     required String fromAsset,
     required String toAsset,
     required double amount,
-  }) async => (await _dio.get(
+  }) async => (await dio.get(
     '/api/wallet/swap-quote',
     queryParameters: {
       'from': fromAsset,
@@ -196,7 +193,7 @@ class ApiService {
     required String fromAsset,
     required String toAsset,
     required double amount,
-  }) async => (await _dio.post(
+  }) async => (await dio.post(
     '/api/wallet/swap',
     data: {'fromAsset': fromAsset, 'toAsset': toAsset, 'amount': amount},
   )).data;
@@ -205,20 +202,20 @@ class ApiService {
   //     (await _dio.get('/api/user/me')).data;
 
   Future<void> markBackedUp() async =>
-      await _dio.post('/api/auth/mark-backed-up');
+      await dio.post('/api/auth/mark-backed-up');
 
   // ─── Wallet (add below getAddress) ───────────────────────────────────────────
   Future<List<String>> getMnemonic() async {
-    final res = await _dio.get('/api/auth/mnemonic');
+    final res = await dio.get('/api/auth/mnemonic');
     final List<dynamic> words = res.data['words'] ?? [];
     return words.cast<String>();
   }
 
   Future<Map<String, dynamic>> syncTransactionsFromBlockchain() async =>
-      (await _dio.post('/api/wallet/sync-transactions')).data;
+      (await dio.post('/api/wallet/sync-transactions')).data;
 
   Future<Map<String, dynamic>> testFundWallet() async =>
-      (await _dio.post('/api/wallet/test-funding')).data;
+      (await dio.post('/api/wallet/test-funding')).data;
 
   // ─── Token ────────────────────────────────────────────────
   Future<void> saveToken(String t) async =>
