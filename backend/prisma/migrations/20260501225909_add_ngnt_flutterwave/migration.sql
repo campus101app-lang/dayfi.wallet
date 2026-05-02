@@ -1,35 +1,28 @@
 -- CreateEnum
-CREATE TYPE "FwPaymentType" AS ENUM ('deposit', 'withdrawal');
+CREATE TYPE IF NOT EXISTS "FwPaymentType" AS ENUM ('deposit', 'withdrawal');
 
 -- CreateEnum
-CREATE TYPE "FwPaymentStatus" AS ENUM ('initiated', 'pending', 'successful', 'failed');
+CREATE TYPE IF NOT EXISTS "FwPaymentStatus" AS ENUM ('initiated', 'pending', 'successful', 'failed');
 
 -- AlterEnum
--- This migration adds more than one value to an enum.
--- With PostgreSQL versions 11 and earlier, this is not possible
--- in a single migration. This can be worked around by creating
--- multiple migrations, each migration adding only one value to
--- the enum.
-
-
-ALTER TYPE "TransactionType" ADD VALUE 'fiatDeposit';
-ALTER TYPE "TransactionType" ADD VALUE 'fiatWithdrawal';
+ALTER TYPE "TransactionType" ADD VALUE IF NOT EXISTS 'fiatDeposit';
+ALTER TYPE "TransactionType" ADD VALUE IF NOT EXISTS 'fiatWithdrawal';
 
 -- AlterTable
-ALTER TABLE "Transaction" ADD COLUMN     "fiatAmount" DOUBLE PRECISION,
-ADD COLUMN     "fiatCurrency" TEXT,
-ADD COLUMN     "flutterwaveRef" TEXT,
-ADD COLUMN     "flutterwaveStatus" TEXT,
-ADD COLUMN     "swapId" TEXT;
+ALTER TABLE "Transaction" ADD COLUMN IF NOT EXISTS "fiatAmount" DOUBLE PRECISION;
+ALTER TABLE "Transaction" ADD COLUMN IF NOT EXISTS "fiatCurrency" TEXT;
+ALTER TABLE "Transaction" ADD COLUMN IF NOT EXISTS "flutterwaveRef" TEXT;
+ALTER TABLE "Transaction" ADD COLUMN IF NOT EXISTS "flutterwaveStatus" TEXT;
+ALTER TABLE "Transaction" ADD COLUMN IF NOT EXISTS "swapId" TEXT;
 
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN     "fullName" TEXT,
-ADD COLUMN     "virtualAccountBank" TEXT,
-ADD COLUMN     "virtualAccountName" TEXT,
-ADD COLUMN     "virtualAccountNumber" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fullName" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "virtualAccountBank" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "virtualAccountName" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "virtualAccountNumber" TEXT;
 
 -- CreateTable
-CREATE TABLE "FlutterwavePayment" (
+CREATE TABLE IF NOT EXISTS "FlutterwavePayment" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "txRef" TEXT NOT NULL,
@@ -52,24 +45,17 @@ CREATE TABLE "FlutterwavePayment" (
     "redirectUrl" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "FlutterwavePayment_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "FlutterwavePayment_txRef_key" ON "FlutterwavePayment"("txRef");
-
--- CreateIndex
-CREATE INDEX "FlutterwavePayment_userId_idx" ON "FlutterwavePayment"("userId");
-
--- CreateIndex
-CREATE INDEX "FlutterwavePayment_txRef_idx" ON "FlutterwavePayment"("txRef");
-
--- CreateIndex
-CREATE INDEX "FlutterwavePayment_flwRef_idx" ON "FlutterwavePayment"("flwRef");
-
--- CreateIndex
-CREATE INDEX "FlutterwavePayment_idempotencyKey_idx" ON "FlutterwavePayment"("idempotencyKey");
+CREATE UNIQUE INDEX IF NOT EXISTS "FlutterwavePayment_txRef_key" ON "FlutterwavePayment"("txRef");
+CREATE INDEX IF NOT EXISTS "FlutterwavePayment_userId_idx" ON "FlutterwavePayment"("userId");
+CREATE INDEX IF NOT EXISTS "FlutterwavePayment_txRef_idx" ON "FlutterwavePayment"("txRef");
+CREATE INDEX IF NOT EXISTS "FlutterwavePayment_flwRef_idx" ON "FlutterwavePayment"("flwRef");
+CREATE INDEX IF NOT EXISTS "FlutterwavePayment_idempotencyKey_idx" ON "FlutterwavePayment"("idempotencyKey");
 
 -- AddForeignKey
-ALTER TABLE "FlutterwavePayment" ADD CONSTRAINT "FlutterwavePayment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "FlutterwavePayment" DROP CONSTRAINT IF EXISTS "FlutterwavePayment_userId_fkey";
+ALTER TABLE "FlutterwavePayment" ADD CONSTRAINT "FlutterwavePayment_userId_fkey" 
+    FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
