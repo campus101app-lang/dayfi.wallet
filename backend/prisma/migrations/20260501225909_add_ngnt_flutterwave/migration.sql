@@ -1,8 +1,14 @@
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "FwPaymentType" AS ENUM ('deposit', 'withdrawal');
+DO $$ BEGIN
+ CREATE TYPE "FwPaymentType" AS ENUM ('deposit', 'withdrawal');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "FwPaymentStatus" AS ENUM ('initiated', 'pending', 'successful', 'failed');
+DO $$ BEGIN
+ CREATE TYPE "FwPaymentStatus" AS ENUM ('initiated', 'pending', 'successful', 'failed');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- AlterEnum
 ALTER TYPE "TransactionType" ADD VALUE IF NOT EXISTS 'fiatDeposit';
@@ -22,7 +28,7 @@ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "virtualAccountName" TEXT;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "virtualAccountNumber" TEXT;
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "FlutterwavePayment" (
+CREATE TABLE "FlutterwavePayment" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "txRef" TEXT NOT NULL,
@@ -49,13 +55,11 @@ CREATE TABLE IF NOT EXISTS "FlutterwavePayment" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX IF NOT EXISTS "FlutterwavePayment_txRef_key" ON "FlutterwavePayment"("txRef");
-CREATE INDEX IF NOT EXISTS "FlutterwavePayment_userId_idx" ON "FlutterwavePayment"("userId");
-CREATE INDEX IF NOT EXISTS "FlutterwavePayment_txRef_idx" ON "FlutterwavePayment"("txRef");
-CREATE INDEX IF NOT EXISTS "FlutterwavePayment_flwRef_idx" ON "FlutterwavePayment"("flwRef");
-CREATE INDEX IF NOT EXISTS "FlutterwavePayment_idempotencyKey_idx" ON "FlutterwavePayment"("idempotencyKey");
+CREATE UNIQUE INDEX "FlutterwavePayment_txRef_key" ON "FlutterwavePayment"("txRef");
+CREATE INDEX "FlutterwavePayment_userId_idx" ON "FlutterwavePayment"("userId");
+CREATE INDEX "FlutterwavePayment_txRef_idx" ON "FlutterwavePayment"("txRef");
+CREATE INDEX "FlutterwavePayment_flwRef_idx" ON "FlutterwavePayment"("flwRef");
+CREATE INDEX "FlutterwavePayment_idempotencyKey_idx" ON "FlutterwavePayment"("idempotencyKey");
 
 -- AddForeignKey
-ALTER TABLE "FlutterwavePayment" DROP CONSTRAINT IF EXISTS "FlutterwavePayment_userId_fkey";
-ALTER TABLE "FlutterwavePayment" ADD CONSTRAINT "FlutterwavePayment_userId_fkey" 
-    FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;import { PrismaClient } from "@prisma/client";
+ALTER TABLE "FlutterwavePayment" ADD CONSTRAINT "FlutterwavePayment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
