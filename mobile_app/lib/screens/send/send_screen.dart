@@ -6,7 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobile_app/widgets/app_bottomsheet.dart';
-import 'dart:async';
 import '../../models/asset.dart';
 import '../../providers/wallet_provider.dart';
 import '../../services/api_service.dart';
@@ -35,7 +34,6 @@ class _SendScreenState extends ConsumerState<SendScreen> {
   String? _amountError;
   Map<String, dynamic>? _resolvedRecipient;
   String? _recipientError;
-  Timer? _debounce;
 
   // ─── Sub-tab (NGNT only) ──────────────────────────────────
   int _sendTab = 0; // 0 = crypto, 1 = bank withdrawal
@@ -49,6 +47,9 @@ class _SendScreenState extends ConsumerState<SendScreen> {
   bool _resolvingAccount = false;
   String? _accountResolveError;
   bool _banksLoaded = false;
+
+  String _displayAsset(String code) => kAssets[code]?.displayCode ?? code;
+  String _settlementHint(String code) => kAssets[code]?.settlementHint ?? '';
 
   @override
   void initState() {
@@ -84,9 +85,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
       } else if (amount > available + 0.0001) {
         // ← epsilon tolerance
         _invalidAmount = true;
-        _amountError =
-            'Insufficient balance. Available: '
-            '${available.toStringAsFixed(_selectedAsset == 'XLM' ? 4 : 2)} $_selectedAsset';
+        _amountError = 'Insufficient balance';
       } else {
         _invalidAmount = false;
         _amountError = null;
@@ -140,19 +139,23 @@ class _SendScreenState extends ConsumerState<SendScreen> {
 
   // ─── Bank helpers ─────────────────────────────────────────
 
-Future<void> _loadBanks() async {
-  if (_banksLoaded) return;
-  try {
-    final banks = await paymentsService.getBanks();
-    if (mounted) setState(() { _banks = banks; _banksLoaded = true; });
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load banks. Try again.')),
-      );
+  Future<void> _loadBanks() async {
+    if (_banksLoaded) return;
+    try {
+      final banks = await paymentsService.getBanks();
+      if (mounted)
+        setState(() {
+          _banks = banks;
+          _banksLoaded = true;
+        });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load banks. Try again.')),
+        );
+      }
     }
   }
-}
 
   Future<void> _resolveAccountName() async {
     if (_selectedBank == null || _accountNumberCtrl.text.length != 10) return;
@@ -169,8 +172,10 @@ Future<void> _loadBanks() async {
       if (mounted) {
         setState(() => _resolvedAccountName = result['accountName'] as String?);
       }
-    } catch (_) {
-      if (mounted) setState(() => _accountResolveError = 'Account not found');
+    } catch (e) {
+      if (mounted) {
+        setState(() => _accountResolveError = apiService.parseError(e));
+      }
     } finally {
       if (mounted) setState(() => _resolvingAccount = false);
     }
@@ -392,7 +397,7 @@ Future<void> _loadBanks() async {
             ),
             const SizedBox(height: 10),
             Text(
-              '${_amountController.text} $_selectedAsset sent successfully.',
+              '${_amountController.text} ${_displayAsset(_selectedAsset)} sent successfully.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontSize: 17,
                 letterSpacing: -.5,
@@ -668,7 +673,7 @@ Future<void> _loadBanks() async {
                       ),
                       const SizedBox(width: 14),
                       Text(
-                        assetCode,
+                        asset.displayCode,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const Spacer(),
@@ -718,7 +723,7 @@ Future<void> _loadBanks() async {
       child: Padding(
         padding: const EdgeInsets.only(top: 6),
         child: Text(
-          'Available: ${available.toStringAsFixed(assetCode == 'XLM' ? 4 : 2)} $assetCode',
+          'Available: ${available.toStringAsFixed(assetCode == 'XLM' ? 4 : 2)} ${_displayAsset(assetCode)}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
             fontSize: 12,
@@ -728,15 +733,33 @@ Future<void> _loadBanks() async {
     );
   }
 
+  Widget _buildAmountError() {
+    if (_amountError == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, left: 4),
+      child: Text(
+        _amountError!,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: const Color(0xFFFFA726),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
   // ─── Bank withdraw form ───────────────────────────────────
 
   Widget _buildBankWithdrawForm() {
     final amount = double.tryParse(_bankAmountCtrl.text.trim());
+    final availableNgnt = ref.read(walletProvider).ngntBalance;
+    final hasInsufficient = amount != null && amount > availableNgnt;
     final canSend =
         _resolvedAccountName != null &&
         _bankAmountCtrl.text.isNotEmpty &&
         amount != null &&
         amount > 0 &&
+        !hasInsufficient &&
         !_loading;
 
     return Column(
@@ -921,10 +944,23 @@ Future<void> _loadBanks() async {
           ),
         ),
 
+        if (hasInsufficient)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              'Insufficient balance',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFFFFA726),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+
         const SizedBox(height: 4),
         Center(
           child: Text(
-            'Available: ${ref.read(walletProvider).ngntBalance.toStringAsFixed(2)} NGNT',
+            'Available: ${availableNgnt.toStringAsFixed(2)} NGN',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               fontSize: 12,
@@ -1011,7 +1047,7 @@ Future<void> _loadBanks() async {
                   child: Text(
                     showBankForm
                         ? 'Withdraw to Bank'
-                        : 'Send ${_selectedAsset}',
+                        : 'Send ${_displayAsset(_selectedAsset)}',
                     style: Theme.of(context).textTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ).animate().fadeIn(),
@@ -1043,11 +1079,26 @@ Future<void> _loadBanks() async {
                       onTap: _showAssetPicker,
                       child: _DropdownBox(
                         emoji: kAssets[_selectedAsset]!.emoji,
-                        label: _selectedAsset,
+                        label: _displayAsset(_selectedAsset),
                       ),
                     ),
                   ).animate().fadeIn(delay: 25.ms),
                 ),
+                if (!showBankForm)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        _settlementHint(_selectedAsset),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.45),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
 
                 // ── NGNT sub-tabs ──────────────────────────────
                 if (isNgnt) ...[
@@ -1210,7 +1261,7 @@ Future<void> _loadBanks() async {
                         context,
                       ).textTheme.bodySmall?.color?.withOpacity(0.1),
                       prefixText: _selectedAsset == 'USDC' ? '\$ ' : '',
-                      suffixText: _selectedAsset,
+                      suffixText: _displayAsset(_selectedAsset),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -1243,6 +1294,7 @@ Future<void> _loadBanks() async {
                     },
                     child: _buildSendBalanceInfo(kAssets[_selectedAsset]!.code),
                   ),
+                  _buildAmountError(),
 
                   const SizedBox(height: 20),
 
@@ -1466,6 +1518,7 @@ class _BankPickerContentState extends State<_BankPickerContent> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1486,7 +1539,7 @@ class _BankPickerContentState extends State<_BankPickerContent> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
           // Search field
           TextField(
@@ -1524,13 +1577,14 @@ class _BankPickerContentState extends State<_BankPickerContent> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
 
           ConstrainedBox(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * .45,
             ),
             child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 12),
               shrinkWrap: true,
               itemCount: filtered.length,
               itemBuilder: (_, i) {

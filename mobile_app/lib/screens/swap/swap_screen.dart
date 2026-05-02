@@ -94,6 +94,9 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
     return amount > 0 && amount > _availableFor(_fromAsset);
   }
 
+  String _displayAsset(String code) => kAssets[code]?.displayCode ?? code;
+  String _settlementHint(String code) => kAssets[code]?.settlementHint ?? '';
+
   // ─── Quote ────────────────────────────────────────────────
 
   void _onAmountChanged(String val, {String field = 'from'}) {
@@ -125,7 +128,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
       if (amount > _availableFor(_fromAsset)) {
         setState(
           () => _quoteError =
-              'Insufficient balance. Available: ${_availableFor(_fromAsset).toStringAsFixed(6)} $_fromAsset',
+              'Insufficient balance. Available: ${_availableFor(_fromAsset).toStringAsFixed(6)} ${_displayAsset(_fromAsset)}',
         );
         return;
       }
@@ -209,7 +212,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
             if (requiredFromAmount > available) {
               setState(() {
                 _quoteError =
-                    'Insufficient balance. Need ${requiredFromAmount.toStringAsFixed(6)} $_fromAsset, '
+                    'Insufficient balance. Need ${requiredFromAmount.toStringAsFixed(6)} ${_displayAsset(_fromAsset)}, '
                     'but only have ${available.toStringAsFixed(6)} available';
                 _quote = null;
               });
@@ -257,7 +260,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Insufficient $_fromAsset balance. '
+            'Insufficient ${_displayAsset(_fromAsset)} balance. '
             'Available: ${_availableFor(_fromAsset).toStringAsFixed(6)}',
           ),
           backgroundColor: const Color(0xFFFFA726),
@@ -427,7 +430,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
             const SizedBox(height: 10),
 
             Text(
-              '${_fromAmountController.text} $_fromAsset → ${_toAmountController.text} $_toAsset',
+              '${_fromAmountController.text} ${_displayAsset(_fromAsset)} → ${_toAmountController.text} ${_displayAsset(_toAsset)}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontSize: 17,
                 letterSpacing: -.5,
@@ -706,7 +709,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                _fromAsset,
+                                _displayAsset(_fromAsset),
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       fontSize: 14,
@@ -791,41 +794,60 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                     ],
                   ),
                 ).animate().fadeIn(delay: 150.ms),
-
-                // Available balance hint (always visible)
                 Padding(
-                  padding: const EdgeInsets.only(top: 6, left: 4),
-                  child: InkWell(
-                    splashColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    hoverColor: Colors.transparent,
-                    onTap: _executing
-                        ? null
-                        : () {
-                            final toUse = available - _estimatedFeeXLM();
-                            _fromAmountController.text = toUse.toStringAsFixed(
-                              _fromAsset == 'XLM' ? 4 : 2,
-                            );
-                            _onAmountChanged(
-                              _fromAmountController.text,
-                              field: 'from',
-                            );
-                          },
-                    child: Text(
-                      _hasInsufficientBalance && _quoteError != null
-                          ? _quoteError!
-                          : 'Available: ${available.toStringAsFixed(_fromAsset == 'XLM' ? 4 : 6)} $_fromAsset',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: _hasInsufficientBalance
-                            ? const Color(0xFFFFA726)
-                            : Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(0.4),
-                        fontWeight: _hasInsufficientBalance
-                            ? FontWeight.w500
-                            : FontWeight.w400,
+                  padding: const EdgeInsets.only(top: 4, left: 4),
+                  child: Text(
+                    _settlementHint(_fromAsset),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(
+                        0.45,
                       ),
                     ),
+                  ),
+                ),
+
+                // Available + validation hints
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      InkWell(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
+                        onTap: _executing
+                            ? null
+                            : () {
+                                final toUse = available - _estimatedFeeXLM();
+                                _fromAmountController.text = toUse.toStringAsFixed(
+                                  _fromAsset == 'XLM' ? 4 : 2,
+                                );
+                                _onAmountChanged(
+                                  _fromAmountController.text,
+                                  field: 'from',
+                                );
+                              },
+                        child: Text(
+                          'Available: ${available.toStringAsFixed(_fromAsset == 'XLM' ? 4 : 6)} ${_displayAsset(_fromAsset)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.4),
+                          ),
+                        ),
+                      ),
+                      if (_hasInsufficientBalance && _quoteError != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Insufficient balance',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFFFFA726),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
 
@@ -914,7 +936,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _toAsset,
+                                _displayAsset(_toAsset),
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       fontSize: 14,
@@ -1000,6 +1022,17 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                     ],
                   ),
                 ).animate().fadeIn(delay: 200.ms),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, left: 4),
+                  child: Text(
+                    _settlementHint(_toAsset),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(
+                        0.45,
+                      ),
+                    ),
+                  ),
+                ),
 
                 // Error messages
                 // if (_quoteError != null)
@@ -1089,7 +1122,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                       children: [
                         Text(
                           _quote != null
-                              ? 'Swap $_fromAsset → $_toAsset'
+                              ? 'Swap ${_displayAsset(_fromAsset)} → ${_displayAsset(_toAsset)}'
                               : 'Enter amount to get quote',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
@@ -1215,7 +1248,7 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                       const SizedBox(width: 14),
 
                       Text(
-                        a.code,
+                        a.displayCode,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
                               color: isDisabled

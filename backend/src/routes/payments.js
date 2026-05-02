@@ -39,9 +39,21 @@ async function flwRequest(path, method = 'GET', payload = null, retries = 2) {
         signal: ctrl.signal,
       });
       clearTimeout(tid);
-      const data = await res.json();
+      const raw = await res.text();
+      let data = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch {
+        data = null;
+      }
+
       if (!res.ok || data?.status !== 'success') {
-        const err = new Error(data?.message || `Flutterwave error (${res.status})`);
+        const msg =
+          data?.message ||
+          data?.error?.message ||
+          (raw && raw.length < 220 ? raw : null) ||
+          `Flutterwave error (${res.status})`;
+        const err = new Error(msg);
         err.status = res.status;
         throw err;
       }
@@ -456,12 +468,33 @@ router.post('/flutterwave/resolve-account', authenticate, [
   if (!ensureFlw(res)) return;
   try {
     const { bankCode, accountNumber } = req.body;
-    const resolved = await flwRequest(
-      `/accounts/resolve?account_number=${encodeURIComponent(accountNumber)}&account_bank=${encodeURIComponent(bankCode)}`
-    );
+    let resolved = null;
+    try {
+      resolved = await flwRequest('/accounts/resolve', 'POST', {
+        account_number: accountNumber,
+        account_bank: bankCode,
+      });
+    } catch (postErr) {
+      // Some provider environments still expect GET for account resolve.
+      resolved = await flwRequest(
+        `/accounts/resolve?account_number=${encodeURIComponent(accountNumber)}&account_bank=${encodeURIComponent(bankCode)}`,
+        'GET',
+      );
+    }
     return res.json({ accountNumber, bankCode, accountName: resolved?.account_name || null });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    const msg = err?.message || 'Could not verify account right now. Please try again.';
+    const status = Number(err?.status || 400);
+    if (status === 400 && /not found|invalid/i.test(msg)) {
+      return res.status(400).json({
+        error: 'ACCOUNT_NOT_FOUND',
+        message: 'Account not found for the selected bank.',
+      });
+    }
+    return res.status(502).json({
+      error: 'ACCOUNT_RESOLVE_FAILED',
+      message: msg,
+    });
   }
 });
 

@@ -15,7 +15,9 @@ import '../../theme/app_theme.dart';
 String _getAssetDisplayName(String asset) {
   switch (asset.toUpperCase()) {
     case 'USDC':
-      return 'Digital Dollar';
+      return 'US Dollar';
+    case 'NGNT':
+      return 'Nigerian Naira';
     case 'XLM':
       return 'Stellar Lumen';
     default:
@@ -26,7 +28,9 @@ String _getAssetDisplayName(String asset) {
 String _getCurrencyLogoAsset(String asset) {
   switch (asset.toUpperCase()) {
     case 'USDC':
-      return 'assets/images/usdc.png';
+      return 'assets/images/us.png';
+    case 'NGNT':
+      return 'assets/images/ng.png';
     case 'XLM':
       return 'assets/images/stellar.png';
     default:

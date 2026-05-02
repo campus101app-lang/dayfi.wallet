@@ -380,19 +380,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ─── Portfolio chip ──────────────────────────────────────
 
   Widget _buildPortfolioChip(WalletState walletState) {
-    final heldAssets = <String>[];
-    if (walletState.xlmBalance > 0) {
-      heldAssets.add('assets/images/stellar.png');
-    }
-    if (walletState.usdcBalance > 0) {
-      heldAssets.add('assets/images/usdc.png');
-    }
-    if (heldAssets.isEmpty) {
-      heldAssets.add('assets/images/stellar.png');
-      heldAssets.add('assets/images/usdc.png');
-    }
-
-    final assets = ['assets/images/stellar.png', 'assets/images/usdc.png'];
+    final assets = [
+      'assets/images/stellar.png',
+      'assets/images/us.png',
+      'assets/images/ng.png',
+    ];
 
     return InkWell(
       splashColor: Colors.transparent,

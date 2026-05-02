@@ -17,13 +17,25 @@ class DayFiAsset {
     if (code == 'NGNT') return amount.toStringAsFixed(2);
     return amount.toStringAsFixed(2);
   }
+
+  String get displayCode {
+    if (code == 'USDC') return 'USD';
+    if (code == 'NGNT') return 'NGN';
+    return code;
+  }
+
+  String get settlementHint {
+    if (code == 'USDC') return 'via USDC on Stellar';
+    if (code == 'NGNT') return 'via NGNT on Stellar';
+    return '';
+  }
 }
 
 const Map<String, DayFiAsset> kAssets = {
   'USDC': DayFiAsset(
     code:  'USDC',
-    name:  'USD Coin',
-    emoji: 'assets/images/usdc.png',
+    name:  'US Dollar',
+    emoji: 'assets/images/us.png',
   ),
   'XLM': DayFiAsset(
     code:  'XLM',
@@ -32,8 +44,8 @@ const Map<String, DayFiAsset> kAssets = {
   ),
   'NGNT': DayFiAsset(
     code:       'NGNT',
-    name:       'Naira Token',
-    emoji:      'assets/images/ngnt.png',
+    name:       'Nigerian Naira',
+    emoji:      'assets/images/ng.png',
     regulated:  true,
   ),
 };

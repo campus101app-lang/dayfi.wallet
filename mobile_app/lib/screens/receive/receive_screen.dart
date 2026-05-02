@@ -14,10 +14,22 @@ import '../../services/api_service.dart';
 import '../../services/payments_service.dart';
 
 final Map<String, String> _assetEmojis = {
-  'USDC': 'assets/images/usdc.png',
+  'USDC': 'assets/images/us.png',
   'XLM': 'assets/images/stellar.png',
   'NGNT': 'assets/images/ng.png',
 };
+
+String _displayAssetCode(String code) {
+  if (code == 'USDC') return 'USD';
+  if (code == 'NGNT') return 'NGN';
+  return code;
+}
+
+String _settlementHint(String code) {
+  if (code == 'USDC') return 'via USDC on Stellar';
+  if (code == 'NGNT') return 'via NGNT on Stellar';
+  return '';
+}
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -147,7 +159,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
             ),
             const SizedBox(height: 32),
             ...currencies.map((assetCode) {
-              final emoji = _assetEmojis[assetCode] ?? 'assets/images/usdc.png';
+              final emoji = _assetEmojis[assetCode] ?? 'assets/images/us.png';
               return InkWell(
                 splashColor: Colors.transparent,
                 highlightColor: Colors.transparent,
@@ -182,7 +194,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                       ),
                       const SizedBox(width: 14),
                       Text(
-                        assetCode,
+                        _displayAssetCode(assetCode),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const Spacer(),
@@ -318,11 +330,24 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                 emoji: _selectedAssetCode != null
                     ? _assetEmojis[_selectedAssetCode]
                     : null,
-                label: _selectedAssetCode ?? 'Choose Currency',
+                label: _selectedAssetCode != null
+                    ? _displayAssetCode(_selectedAssetCode!)
+                    : 'Choose Currency',
               ),
             ),
           ),
         ).animate().fadeIn(delay: 150.ms),
+        if (_selectedAssetCode != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              _settlementHint(_selectedAssetCode!),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
 
         const SizedBox(height: 18),
 
@@ -403,7 +428,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         ).animate().fadeIn(),
         const SizedBox(height: 8),
         Text(
-          'Share this QR or your dayfi.me username.\nAnyone can send you USDC instantly.',
+          'Share this QR or your dayfi.me username.\nAnyone can send you USD instantly.',
           style: Theme.of(context).textTheme.bodySmall!.copyWith(
             fontSize: 14,
             letterSpacing: -.1,
@@ -429,7 +454,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         ).animate().fadeIn(),
         const SizedBox(height: 32),
         _ActionButtons(
-          onShare: () => _share('Send me USDC at $username'),
+          onShare: () => _share('Send me USD at $username'),
           onCopy: () => _copy(username),
         ).animate().fadeIn(),
         const SizedBox(height: 32),

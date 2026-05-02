@@ -311,7 +311,8 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
         : 0.0;
     final xlmUSD = xlmDisplayBalance * xlmPrice;
     final usdcUSD = w.usdcBalance;
-    final totalUSD = xlmUSD + usdcUSD;
+    final ngntUSD = 0.0;
+    final totalUSD = xlmUSD + usdcUSD + ngntUSD;
 
     final xlmPoints = _buildPoints(
       txs,
@@ -349,8 +350,8 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
 
     final usdcDetail = _AssetDetail(
       code: 'USDC',
-      name: 'USD Coin',
-      imagePath: 'assets/images/usdc.png',
+      name: 'US Dollar',
+      imagePath: 'assets/images/us.png',
       balance: w.usdcBalance,
       usdValue: usdcUSD,
       changePercent: _computeChange(usdcPoints),
@@ -358,6 +359,19 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
       reserved: 0,
       price: 1.0,
       points: usdcPoints,
+    );
+
+    final ngntDetail = _AssetDetail(
+      code: 'NGNT',
+      name: 'Naira Token',
+      imagePath: 'assets/images/ng.png',
+      balance: w.ngntBalance,
+      usdValue: ngntUSD,
+      changePercent: 0.0,
+      available: w.ngntBalance,
+      reserved: 0,
+      price: 0.0,
+      points: const [0.0, 0.0],
     );
 
     return Padding(
@@ -371,7 +385,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
           _buildChangeRow(changePct, changeAbs),
           const SizedBox(height: 20),
           _buildReserveNotice(context),
-          _buildAssetsSection(context, xlmDetail, usdcDetail, w),
+          _buildAssetsSection(context, xlmDetail, usdcDetail, ngntDetail, w),
           const SizedBox(height: 48),
         ],
       ),
@@ -752,9 +766,10 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
     BuildContext context,
     _AssetDetail xlm,
     _AssetDetail usdc,
+    _AssetDetail ngnt,
     WalletState w,
   ) {
-    final assets = [xlm, usdc];
+    final assets = [xlm, usdc, ngnt];
     final total = w.totalUSD - (2.0 * w.xlmPriceUSD);
 
     return Column(
@@ -800,6 +815,16 @@ class _AssetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String displayCode(String code) {
+      if (code == 'USDC') return 'USD';
+      if (code == 'NGNT') return 'NGN';
+      return code;
+    }
+    String? settlementHint(String code) {
+      if (code == 'USDC') return 'USD • Settled via USDC on Stellar';
+      if (code == 'NGNT') return 'NGN • Settled via NGNT on Stellar';
+      return null;
+    }
     final pos = detail.changePercent >= 0;
     return InkWell(
       splashColor: Colors.transparent,
@@ -835,7 +860,7 @@ class _AssetCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        detail.code,
+                        displayCode(detail.code),
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w500,
                           letterSpacing: -0.1,
@@ -847,7 +872,7 @@ class _AssetCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${detail.balance.toStringAsFixed(detail.code == 'USDC' ? 2 : 4)} ${detail.code}',
+                        '${detail.balance.toStringAsFixed(detail.code == 'USDC' ? 2 : 4)} ${displayCode(detail.code)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(
                             context,
@@ -909,6 +934,24 @@ class _AssetCard extends StatelessWidget {
                 // ),
               ],
             ),
+            if (settlementHint(detail.code) != null) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 50),
+                  child: Text(
+                    settlementHint(detail.code)!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.4),
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -933,6 +976,11 @@ class _AssetDetailSheetState extends State<_AssetDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final d = widget.detail;
+    String displayCode(String code) {
+      if (code == 'USDC') return 'USD';
+      if (code == 'NGNT') return 'NGN';
+      return code;
+    }
     final pos = d.changePercent >= 0;
     final changeColor = pos ? DayFiColors.green : Colors.redAccent;
     final changeBg = pos
@@ -978,7 +1026,7 @@ class _AssetDetailSheetState extends State<_AssetDetailSheet> {
               ),
               const SizedBox(width: 8),
               Text(
-                d.code,
+                displayCode(d.code),
                 style: Theme.of(context).textTheme.titleLarge!.copyWith(
                   fontSize: 16,
                   letterSpacing: -.1,
@@ -1086,7 +1134,7 @@ class _AssetDetailSheetState extends State<_AssetDetailSheet> {
                 child: _StatCard(
                   label: 'Balance',
                   value:
-                      '${d.balance.toStringAsFixed(d.code == 'USDC' ? 2 : 4)} ${d.code}',
+                      '${d.balance.toStringAsFixed(d.code == 'USDC' ? 2 : 4)} ${displayCode(d.code)}',
                   valueColor: Theme.of(
                     context,
                   ).textTheme.displayLarge?.color?.withOpacity(.85),

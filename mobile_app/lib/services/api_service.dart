@@ -226,6 +226,7 @@ class ApiService {
   String parseError(dynamic error) {
     if (error is DioException) {
       final data = error.response?.data;
+      if (data is Map && data['message'] != null) return data['message'];
       if (data is Map && data['error'] != null) return data['error'];
       if (data is Map && data['errors'] != null) {
         return (data['errors'] as List).map((e) => e['msg']).join(', ');
