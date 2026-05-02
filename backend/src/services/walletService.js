@@ -75,9 +75,21 @@ function decrypt(encText) {
 // ─── Setup trustlines for user (after wallet is created) ─────────────────────
 
 export async function setupUserTrustlines(user) {
+  if (!user) {
+    console.error("❌ Trustline setup failed: User object is null/undefined");
+    return false;
+  }
+
   if (!user.stellarSecretKey) {
     console.warn(
       `⚠️  User ${user.id} has no secret key. Skipping trustline setup.`,
+    );
+    return false;
+  }
+
+  if (!user.stellarPublicKey) {
+    console.error(
+      `❌ User ${user.id} has no public key. Trustline setup aborted.`,
     );
     return false;
   }
@@ -130,8 +142,20 @@ export async function createStellarWallet() {
 // ─── Trustlines ───────────────────────────────────────────────────────────────
 
 export async function addAllTrustlines(keypair) {
+  const publicKey = keypair.publicKey();
   try {
-    const account = await server.loadAccount(keypair.publicKey());
+    // Verify account exists and has XLM balance
+    const account = await server.loadAccount(publicKey);
+    const nativeBalance = parseFloat(
+      account.balances.find((b) => b.asset_type === "native")?.balance || "0",
+    );
+
+    if (nativeBalance < 1) {
+      throw new Error(
+        `Insufficient XLM balance (${nativeBalance} XLM). Need at least 1 XLM for trustlines.`,
+      );
+    }
+
     const txBuilder = new StellarSdk.TransactionBuilder(account, {
       fee: StellarSdk.BASE_FEE,
       networkPassphrase,
@@ -155,10 +179,35 @@ export async function addAllTrustlines(keypair) {
 
     const tx = txBuilder.build();
     tx.sign(keypair);
+    console.log(
+      `📝 Submitting trustlines for ${publicKey} (XLM balance: ${nativeBalance})`,
+    );
     const result = await server.submitTransaction(tx);
+    console.log(
+      `✅ Trustlines successfully set for ${publicKey} | Hash: ${result.hash}`,
+    );
     return result;
   } catch (err) {
-    console.error("Trustline error:", err.message);
+    const errorStatus = err.response?.status || "unknown";
+    const errorMsg = err.message || "Unknown error";
+
+    console.error(
+      `❌ Trustline error [${errorStatus}]: ${errorMsg}`,
+    );
+
+    if (err.response?.status === 404) {
+      console.error(
+        `   → Account not found on-chain. Ensure funding was successful.`,
+      );
+    }
+
+    if (err.response?.data?.extras?.result_codes) {
+      console.error(
+        `   Result codes:`,
+        JSON.stringify(err.response.data.extras.result_codes),
+      );
+    }
+
     throw err;
   }
 }
@@ -674,8 +723,12 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
     let destExists = true;
     try {
       await server.loadAccount(userPublicKey);
-    } catch {
-      destExists = false;
+    } catch (err) {
+      if (err.response?.status === 404) {
+        destExists = false;
+      } else {
+        throw err;
+      }
     }
 
     const txBuilder = new StellarSdk.TransactionBuilder(masterAccount, {
@@ -691,6 +744,9 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
           startingBalance: fundingAmount,
         }),
       );
+      console.log(
+        `📝 Creating account ${userPublicKey} with ${fundingAmount} XLM`,
+      );
     } else {
       // Account exists, just send XLM
       txBuilder.addOperation(
@@ -700,6 +756,7 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
           amount: fundingAmount,
         }),
       );
+      console.log(`📝 Sending ${fundingAmount} XLM to ${userPublicKey}`);
     }
 
     const tx = txBuilder.setTimeout(30).build();
@@ -729,7 +786,29 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
 
     return result;
   } catch (err) {
-    console.error("❌ Auto-funding failed:", err.message);
+    const errorMsg = err.message || "Unknown error";
+    const errorStatus = err.response?.status || "unknown";
+    const errorData = err.response?.data || {};
+
+    console.error(
+      `❌ Auto-funding failed: [${errorStatus}] ${errorMsg}`,
+    );
+
+    if (errorData.extras?.result_codes) {
+      console.error(
+        `   Result codes:`,
+        JSON.stringify(errorData.extras.result_codes),
+      );
+    }
+
+    if (errorData.title) {
+      console.error(`   Horizon error: ${errorData.title}`);
+    }
+
+    if (errorData.detail) {
+      console.error(`   Details: ${errorData.detail}`);
+    }
+
     // Don't throw — allow user creation to succeed even if funding fails
     return null;
   }
