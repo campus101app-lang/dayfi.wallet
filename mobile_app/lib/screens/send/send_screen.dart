@@ -53,21 +53,8 @@ class _SendScreenState extends ConsumerState<SendScreen> {
   @override
   void initState() {
     super.initState();
-<<<<<<< HEAD
-    if (widget.initialAsset != null) {
-      _selectedAsset = widget.initialAsset!;
-    } else {
-      // Auto-select USDC if user has balance, otherwise default to USDC
-      final wallet = ref.read(walletProvider);
-      if (wallet.usdcBalance > 0) {
-        _selectedAsset = 'USDC';
-      }
-    }
-    _amountController.addListener(() => _onAmountChanged(_amountController.text));
-=======
     if (widget.initialAsset != null) _selectedAsset = widget.initialAsset!;
     _amountController.addListener(_validateAmount);
->>>>>>> qa
     _toController.addListener(() => setState(() {}));
     _bankAmountCtrl.addListener(() => setState(() {}));
   }
@@ -77,28 +64,12 @@ class _SendScreenState extends ConsumerState<SendScreen> {
     _toController.dispose();
     _amountController.dispose();
     _memoController.dispose();
-<<<<<<< HEAD
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  void _onAmountChanged(String val) {
-    _debounce?.cancel();
-    setState(() {
-      _amountError = null;
-      _invalidAmount = false;
-    });
-    if (val.isEmpty || double.tryParse(val) == null) return;
-    _debounce = Timer(const Duration(milliseconds: 500), _validateAmount);
-  }
-=======
     _accountNumberCtrl.dispose();
     _bankAmountCtrl.dispose();
     super.dispose();
   }
 
   // ─── Validation ───────────────────────────────────────────
->>>>>>> qa
 
   void _validateAmount() {
     final amount = double.tryParse(_amountController.text.trim());
@@ -302,38 +273,6 @@ Future<void> _loadBanks() async {
                   ),
                 ),
                 const SizedBox(height: 32),
-<<<<<<< HEAD
-
-                // Retry
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: Size(MediaQuery.of(context).size.width, 48),
-                      side: BorderSide(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(.90),
-                        width: 1.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _send();
-                    },
-                    icon: const Icon(Icons.refresh_rounded, size: 20),
-                    label: Text(
-                      'Retry',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(.95),
-                        fontSize: 15,
-                      ),
-=======
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     minimumSize: Size(MediaQuery.of(context).size.width, 48),
@@ -382,7 +321,6 @@ Future<void> _loadBanks() async {
                         context,
                       ).colorScheme.onSurface.withOpacity(.95),
                       fontSize: 15,
->>>>>>> qa
                     ),
                   ).animate().fadeIn(delay: 500.ms),
                 ),
@@ -776,28 +714,6 @@ Future<void> _loadBanks() async {
 
   Widget _buildSendBalanceInfo(String assetCode) {
     final available = _availableBalance(assetCode);
-<<<<<<< HEAD
-    
-    // Show error if amount is invalid
-    if (_invalidAmount && _amountError != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(
-            _amountError!,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFFFFA726),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      );
-    }
-    
-    // Show available balance
-=======
->>>>>>> qa
     return Center(
       child: Padding(
         padding: const EdgeInsets.only(top: 6),
@@ -1169,25 +1085,6 @@ Future<void> _loadBanks() async {
 
                 const SizedBox(height: 20),
 
-<<<<<<< HEAD
-                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child:  TextField(
-                  controller: _toController,
-                  autocorrect: false,
-                  onChanged: (v) {
-                    if (v.length > 2) _resolveRecipient(v);
-                  },
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(.85),
-                    fontSize: 15,
-                    letterSpacing: -.1,
-                  ),
-                  decoration: InputDecoration(
-                    hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-=======
                 // ── Bank withdrawal form ───────────────────────
                 if (showBankForm)
                   _buildBankWithdrawForm().animate().fadeIn(delay: 40.ms),
@@ -1201,253 +1098,12 @@ Future<void> _loadBanks() async {
                       if (v.length > 2) _resolveRecipient(v);
                     },
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
->>>>>>> qa
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface.withOpacity(.85),
                       fontSize: 15,
                       letterSpacing: -.1,
                     ),
-<<<<<<< HEAD
-                    fillColor: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.color?.withOpacity(0.1),
-                    hintText: 'Type recipient\'s username or wallet address',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    disabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    suffixIcon: _resolving
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        : _resolvedRecipient != null
-                        ? Padding(
-                            padding: EdgeInsets.all(12),
-                            child: SvgPicture.asset(
-                              'assets/icons/svgs/circle_check.svg',
-                              color: DayFiColors.green,
-                              height: 16,
-                            ),
-                          )
-                        : null,
-
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 10,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 50.ms),),
-
-                if (_recipientError != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6, left: 4),
-                    child: Text(
-                      _recipientError!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                        fontSize: 12,
-                      ),
-                    ),
-                  )
-                else if (_resolvedRecipient != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6, left: 4),
-                    child: Text(
-                      _resolvedRecipient!['username'] ??
-                          _resolvedRecipient!['address'] ??
-                          'Recipient found on-chain',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: DayFiColors.green,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-
-                const SizedBox(height: 20),
-
-                // Amount
-                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child:  TextField(
-                  controller: _amountController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(.85),
-                    fontSize: 15,
-                    letterSpacing: -.1,
-                  ),
-                  decoration: InputDecoration(
-                    hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(.35),
-                      fontSize: 15,
-                      letterSpacing: -.1,
-                    ),
-                    fillColor: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.color?.withOpacity(0.1),
-                    hintText: 'Enter amount (0.00)',
-                    prefixText: _selectedAsset == 'USDC' ? '\$ ' : '',
-                    suffixText: _selectedAsset,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    disabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 10,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 100.ms),),
-
-                const SizedBox(height: 4),
-                InkWell(
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  onTap: () {
-                    final maxAmount = _availableBalance(_selectedAsset);
-                    _amountController.text = maxAmount.toStringAsFixed(
-                      _selectedAsset == 'XLM' ? 4 : 2,
-                    );
-                  },
-                  child: _buildSendBalanceInfo(kAssets[_selectedAsset]!.code),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Memo
-                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child:  TextField(
-                  controller: _memoController,
-                  maxLength: 28,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(.85),
-                    fontSize: 15,
-                    letterSpacing: -.1,
-                  ),
-                  decoration: InputDecoration(
-                    hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(.35),
-                      fontSize: 15,
-                      letterSpacing: -.1,
-                    ),
-                    fillColor: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.color?.withOpacity(0.1),
-                    hintText: "Add memo (optional)",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    disabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 10,
-                    ),
-                    counterText: '',
-                  ),
-                ).animate().fadeIn(delay: 100.ms),),
-
-                const SizedBox(height: 20),
-
-                // Replace OutlinedButton.icon with a plain OutlinedButton + full width
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 48),
-                      side: BorderSide(
-                        color:
-                            _loading ||
-                                _invalidAmount ||
-                                _amountController.text.isEmpty ||
-                                _toController.text.trim().isEmpty
-                            ? Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(.45)
-                            : Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(.90),
-                        width: 1.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-=======
                     decoration: InputDecoration(
                       hintText: 'Type recipient\'s username or wallet address',
                       hintStyle: Theme.of(context).textTheme.bodyMedium
@@ -1462,7 +1118,6 @@ Future<void> _loadBanks() async {
                         context,
                       ).textTheme.bodySmall?.color?.withOpacity(0.1),
                       border: OutlineInputBorder(
->>>>>>> qa
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
@@ -1526,30 +1181,6 @@ Future<void> _loadBanks() async {
                         ),
                       ),
                     ),
-<<<<<<< HEAD
-                    onPressed:
-                        _loading ||
-                            _invalidAmount ||
-                            _amountController.text.isEmpty ||
-                            _toController.text.trim().isEmpty
-                        ? null
-                        : _send,
-                    child: Text(
-                      'Send',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color:
-                            _loading ||
-                                _invalidAmount ||
-                                _amountController.text.isEmpty ||
-                                _toController.text.trim().isEmpty
-                            ? Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(.45)
-                            : Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(.90),
-                        fontSize: 15,
-=======
 
                   const SizedBox(height: 20),
 
@@ -1692,7 +1323,6 @@ Future<void> _loadBanks() async {
                                 ).colorScheme.onSurface.withOpacity(.45),
                           fontSize: 15,
                         ),
->>>>>>> qa
                       ),
                     ),
                   ),

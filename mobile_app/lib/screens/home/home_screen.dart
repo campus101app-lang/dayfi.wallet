@@ -6,15 +6,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-<<<<<<< HEAD
-// import 'package:google_fonts/google_fonts.dart';
-import 'package:mobile_app/widgets/app_background.dart';
-import 'package:url_launcher/url_launcher.dart';
-=======
 import 'package:google_fonts/google_fonts.dart';
 // import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_app/widgets/app_background.dart';
->>>>>>> qa
+import 'package:url_launcher/url_launcher.dart';
 // import '../../models/asset.dart';
 import '../../providers/wallet_provider.dart';
 import '../../theme/app_theme.dart';
@@ -146,16 +141,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               physics: const ClampingScrollPhysics(),
               children: [
                 SizedBox(
-<<<<<<< HEAD
-                  height:
-                      MediaQuery.of(context).size.height -
-                      54 -
-                      (MediaQuery.of(context).padding.top +
-                          MediaQuery.of(context).padding.bottom),
-=======
                   height: MediaQuery.of(context).size.height - 154,
 
->>>>>>> qa
                   child: Column(
                     children: [
                       const Spacer(flex: 4),

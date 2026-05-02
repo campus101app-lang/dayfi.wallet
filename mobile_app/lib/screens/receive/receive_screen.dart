@@ -332,11 +332,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
               children: [
                 const SizedBox(height: 24),
                 SvgPicture.asset(
-<<<<<<< HEAD
-                  "assets/icons/svgs/qrcode.svg",
-=======
                   'assets/images/qrcode.svg',
->>>>>>> qa
                   height: 80,
                   color: Theme.of(
                     context,
