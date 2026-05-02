@@ -146,6 +146,24 @@ model DeviceToken {
   @@index([userId])
 }
 
+model InventoryItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  price       Float
+  currency    String   @default("USDC")
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
 enum TransactionType {
   send
   receive
