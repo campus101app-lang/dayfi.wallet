@@ -58,4 +58,4 @@ CREATE INDEX IF NOT EXISTS "FlutterwavePayment_idempotencyKey_idx" ON "Flutterwa
 -- AddForeignKey
 ALTER TABLE "FlutterwavePayment" DROP CONSTRAINT IF EXISTS "FlutterwavePayment_userId_fkey";
 ALTER TABLE "FlutterwavePayment" ADD CONSTRAINT "FlutterwavePayment_userId_fkey" 
-    FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;import { PrismaClient } from "@prisma/client";
