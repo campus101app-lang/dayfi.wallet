@@ -72,6 +72,21 @@ function decrypt(encText) {
   return dec;
 }
 
+function decryptMasterSecret(secretValue) {
+  const value = String(secretValue || "").trim();
+  const parts = value.split(":");
+  const looksEncrypted =
+    parts.length === 3 &&
+    /^[0-9a-f]+$/i.test(parts[0]) &&
+    /^[0-9a-f]+$/i.test(parts[1]) &&
+    /^[0-9a-f]+$/i.test(parts[2]) &&
+    parts[0].length === 32 &&
+    parts[1].length === 32;
+
+  if (looksEncrypted) return decrypt(value);
+  return value;
+}
+
 // ─── Setup trustlines for user (after wallet is created) ─────────────────────
 
 export async function setupUserTrustlines(user) {
@@ -713,7 +728,7 @@ export async function fundNewUserWallet(userPublicKey, userId = null) {
 
   try {
     // Decrypt the master wallet secret key
-    const masterSecret = decrypt(masterSecretEncrypted);
+    const masterSecret = decryptMasterSecret(masterSecretEncrypted);
     const masterKeypair = StellarSdk.Keypair.fromSecret(masterSecret);
 
     // Get master account
@@ -839,7 +854,7 @@ export async function sendAssetFromMasterWallet(
   if (!recipientAddress || recipientAddress.length !== 56 || !recipientAddress.startsWith("G"))
     throw new Error("Invalid recipient address");
 
-  const masterSecret = decrypt(masterSecretEncrypted);
+  const masterSecret = decryptMasterSecret(masterSecretEncrypted);
   const masterKeypair = StellarSdk.Keypair.fromSecret(masterSecret);
   const masterAccount = await server.loadAccount(masterPublicKey);
 
@@ -903,7 +918,7 @@ export async function sendFromMasterWallet(
 
   try {
     // Decrypt the master wallet secret key
-    const masterSecret = decrypt(masterSecretEncrypted);
+    const masterSecret = decryptMasterSecret(masterSecretEncrypted);
     const masterKeypair = StellarSdk.Keypair.fromSecret(masterSecret);
 
     // Get master account
