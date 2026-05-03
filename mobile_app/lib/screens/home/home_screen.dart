@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+// import 'package:mobile_app/widgets/app_ai_buttons.dart';
 // import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_app/widgets/app_background.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -151,10 +152,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _buildTotalBalance(walletState),
                       const SizedBox(height: 16),
                       _buildPortfolioChip(walletState),
+                      // const SizedBox(height: 32),
+
+                      // Wherever your current button is, replace it with any of these:
+                      // AuroraAssistantButton(
+                      //   onPressed: () {
+                      //     // your action here
+                      //   },
+                      // ),
+
+                      // SpinningBorderAssistantButton(
+                      //   onPressed: () {
+                      //     // your action here
+                      //   },
+                      // ),
+
+                      // BreathingAssistantButton(
+                      //   onPressed: () {
+                      //     // your action here
+                      //   },
+                      // ),
+
+                      // HolographicAssistantButton(
+                      //   onPressed: () {
+                      //     // your action here
+                      //   },
+                      // ),
                       const SizedBox(height: 32),
                       _buildTransactionsLink(),
                       const Spacer(flex: 5),
-
                       // const SizedBox(height: 20),
                     ],
                   ),
@@ -201,13 +227,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildTotalBalance(WalletState walletState) {
-    final xlmPriceUSD = walletState.xlmPriceUSD ?? 0.0;
-    const xlmReserve = 2.0;
-    final reservedUSD = xlmReserve * xlmPriceUSD;
+    final xlmPriceUSD = walletState.xlmPriceUSD;
+    // const xlmReserve = 2.0;
+    // final reservedUSD = xlmReserve * xlmPriceUSD;
 
     // ── Determine what value to actually display ──────────────
     // Priority: live total → last known → dash (never show 0.00 falsely)
-    final rawTotal = walletState.totalUSD - reservedUSD;
+    // final rawTotal = walletState.totalUSD - reservedUSD;
+    final rawTotal = walletState.totalUSD;
     final liveTotal = rawTotal < 0
         ? 0.0
         : double.parse(rawTotal.toStringAsFixed(2));
@@ -299,7 +326,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               fontWeight: FontWeight.w400,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(.60),
               letterSpacing: 0.4,
-              fontSize: 26,
+              fontSize: 28,
             ),
           ),
         ),
@@ -324,7 +351,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 context,
               ).colorScheme.onSurface.withOpacity(opacity),
               letterSpacing: 0.4,
-              height:1.2
+              height: 1.2,
             ),
           ),
         ),
@@ -392,7 +419,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       hoverColor: Colors.transparent,
       onTap: () => context.push('/portfolio'),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
         decoration: BoxDecoration(
           color: Theme.of(context).textTheme.bodySmall!.color!.withOpacity(0.1),
           borderRadius: BorderRadius.circular(40),
@@ -402,20 +429,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(
               width: 16.0 + (assets.length * 16.0),
-              height: 26,
+              height: 24,
               child: Stack(
+                alignment: Alignment.center,
                 children: List.generate(assets.length, (i) {
                   return Positioned(
                     left: i * 16.0,
                     child: Container(
-                      width: 26,
-                      height: 26,
+                      width: 20,
+                      height: 20,
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
                         shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
+                          width: 1,
+                        ),
                       ),
                       child: Center(
                         child: ClipRRect(
@@ -434,7 +468,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 }),
               ),
             ),
-            const SizedBox(width: 2),
+            // const SizedBox(width: 2),
             Text(
               'Portfolio',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -522,7 +556,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildActionRow() {
     final walletState = ref.watch(walletProvider);
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 72),
       child: Container(

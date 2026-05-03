@@ -168,12 +168,12 @@ class _BlurSheetScaffold extends StatelessWidget {
                           ),
                           boxShadow: [
                             // Subtle glow using green accent
-                            BoxShadow(
-                              color: glowColor,
-                              blurRadius: 40,
-                              spreadRadius: 0,
-                              offset: const Offset(0, -12),
-                            ),
+                            // BoxShadow(
+                            //   color: glowColor,
+                            //   blurRadius: 40,
+                            //   spreadRadius: 0,
+                            //   offset: const Offset(0, -12),
+                            // ),
                             // Depth shadow
                             BoxShadow(
                               color: Colors.black.withOpacity(

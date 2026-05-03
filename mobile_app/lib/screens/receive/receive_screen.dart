@@ -271,7 +271,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                               onTap: () => setState(() => _selectedTab = 1),
                             ),
                             _Tab(
-                              label: 'Bank',
+                              label: 'Bank Transfer',
                               selected: _selectedTab == 2,
                               onTap: () => setState(() => _selectedTab = 2),
                             ),
@@ -357,7 +357,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
               children: [
                 const SizedBox(height: 24),
                 SvgPicture.asset(
-                  'assets/images/qrcode.svg',
+                  'assets/icons/svgs/qrcode.svg',
                   height: 80,
                   color: Theme.of(
                     context,
@@ -493,7 +493,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
           )
         else if (!wallet.virtualAccountExists)
           _BvnSetupCard(
-            onCreated: () =>
+            onCreated: () =>  
                 ref.read(walletProvider.notifier).loadVirtualAccount(),
           ).animate().fadeIn(delay: 100.ms)
         else ...[

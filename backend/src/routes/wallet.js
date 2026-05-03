@@ -33,20 +33,6 @@ const ASSET_CONFIG = {
       },
     ],
   },
-  NGNT: {
-    name: 'Nigerian Naira Token',
-    emoji: '🇳🇬',
-    description: 'NGN-backed stablecoin on Stellar',
-    regulated: true,
-    issuers: [
-      {
-        key: 'stellar_ngnt',
-        label: 'AZA Finance (Stellar)',
-        description: 'Issued by AZA Finance on Stellar Network',
-        emoji: '⭐',
-      },
-    ],
-  },
   XLM: {
     name: 'Stellar Lumens',
     emoji: '🌟',
@@ -79,12 +65,11 @@ async function getLivePrices() {
     _priceCache = {
       USDC: data['usd-coin']?.usd ?? 1.0,
       XLM:  data['stellar']?.usd  ?? 0.16,
-      NGNT: 0.00065, // ~1 NGN in USD (fixed peg, not on CoinGecko)
     };
     _priceCacheTime = now;
     return _priceCache;
   } catch {
-    return { USDC: 1.0, XLM: 0.16, NGNT: 0.00065 };
+    return { USDC: 1.0, XLM: 0.16 };
   }
 }
 

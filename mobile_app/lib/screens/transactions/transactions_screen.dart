@@ -66,6 +66,12 @@ Color _getStatusColor(BuildContext context, String? status) {
   }
 }
 
+String _getSettlementLabel(Map<String, dynamic> tx) {
+  if (tx['type'] != 'fiatDeposit') return '';
+  final s = (tx['flutterwaveStatus'] as String?)?.toLowerCase() ?? '';
+  return s == 'settled' ? 'Settlement settled' : 'Settlement pending';
+}
+
 String _getUsdAmount(double amount, String asset) {
   // USDC is 1:1 with USD
   if (asset.toUpperCase() == 'USDC') {
@@ -682,7 +688,7 @@ void _showTxDetails(BuildContext context, Map<String, dynamic> tx) {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 6),
 
           // Transaction type and asset name
           Text(
@@ -712,11 +718,19 @@ void _showTxDetails(BuildContext context, Map<String, dynamic> tx) {
 
           const SizedBox(height: 8),
 
+          // USD Amount
+          Text(
+            _getUsdAmount(amount, asset),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.primary.withOpacity(1),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
           // Status badge
           Text(
-            status!.toLowerCase() == "confirmed"
-                ? DateFormat('h:mm a').format(createdAt.toLocal())
-                : _getStatusLabel(status),
+            _getStatusLabel(status),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: _getStatusColor(context, status),
               fontWeight: FontWeight.w600,
@@ -861,22 +875,22 @@ class _TxTile extends StatelessWidget {
     final asset = tx['asset'] as String;
     final assetDisplayName = _getAssetDisplayName(asset);
     final swapToAsset = (tx['swapToAsset'] as String?) ?? '';
-    final swapToAssetDisplayName = _getAssetDisplayName(swapToAsset);
+    // final swapToAssetDisplayName = _getAssetDisplayName(swapToAsset);
     final swapToAmount = (tx['receivedAmount'] ?? tx['swapToAmount']) != null
         ? ((tx['receivedAmount'] ?? tx['swapToAmount']) as num).toDouble()
         : null;
     final createdAt =
         DateTime.tryParse(tx['createdAt'] ?? '') ?? DateTime.now();
-    final toUsername = tx['toUsername'] as String?;
+    // final toUsername = tx['toUsername'] as String?;
     final status = tx['status'] as String?;
 
     return GestureDetector(
       onTap: () => _showTxDetails(context, tx),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.only(left: 6, right: 16, top: 12, bottom: 12),
+        padding: const EdgeInsets.only(top: 8, bottom: 8, left: 8, right: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -886,13 +900,14 @@ class _TxTile extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 40,
-                  height: 40,
+                  // width: 40,
+                  height: 32,
                   // decoration: BoxDecoration(
                   //   color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
                   //   borderRadius: BorderRadius.circular(12),
                   // ),
-                  child: Center(
+                  child: Align(
+                    alignment: Alignment.topCenter,
                     child: SvgPicture.asset(
                       isSwap
                           ? 'assets/icons/svgs/swap.svg'
@@ -902,8 +917,8 @@ class _TxTile extends StatelessWidget {
                       color: Theme.of(
                         context,
                       ).colorScheme.primary.withOpacity(.75),
-                      width: 24,
-                      height: 24,
+                      width: 22,
+                      height: 22,
                     ),
                   ),
                 ),
@@ -942,7 +957,7 @@ class _TxTile extends StatelessWidget {
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface.withOpacity(.95),
-                      letterSpacing: -.1,
+                      letterSpacing: .4,
                     ),
                   ),
 
@@ -952,8 +967,9 @@ class _TxTile extends StatelessWidget {
                         : _getStatusLabel(status),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: _getStatusColor(context, status),
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       fontSize: 14,
+                      letterSpacing: -.1,
                     ),
                   ),
                 ],
@@ -963,13 +979,29 @@ class _TxTile extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                if (tx['type'] == 'fiatDeposit')
+                  Text(
+                    _getSettlementLabel(tx).replaceFirst('Settlement ', ''),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color:
+                          ((tx['flutterwaveStatus'] as String?)
+                                  ?.toLowerCase() ==
+                              'settled')
+                          ? DayFiColors.green
+                          : const Color(0xFFFFA726),
+                    ),
+                  ),
+                if (tx['type'] == 'fiatDeposit') const SizedBox(height: 2),
                 // USD Amount
                 Text(
                   _getUsdAmount(amount, asset),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(1),
-                    fontWeight: FontWeight.w600,
                     fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 // Coin Amount
@@ -991,7 +1023,8 @@ class _TxTile extends StatelessWidget {
             // Time
           ],
         ),
-      ).animate().fadeIn(delay: Duration(milliseconds: index * 50)),
+      ),
+      // .animate().fadeIn(delay: Duration(milliseconds: index * 50)),
     );
   }
 }

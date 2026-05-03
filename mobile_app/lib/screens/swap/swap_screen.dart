@@ -652,11 +652,12 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                         const SizedBox(width: 6),
                         Text(
                           'Your wallet has no funds to swap.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color.fromARGB(255, 232, 172, 9),
-                            fontSize: 14,
-                            letterSpacing: -0.2,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: const Color.fromARGB(255, 232, 172, 9),
+                                fontSize: 14,
+                                letterSpacing: -0.2,
+                              ),
                         ),
                       ],
                     ).animate().fadeIn(),
@@ -794,17 +795,17 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                     ],
                   ),
                 ).animate().fadeIn(delay: 150.ms),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, left: 4),
-                  child: Text(
-                    _settlementHint(_fromAsset),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(
-                        0.45,
-                      ),
-                    ),
-                  ),
-                ),
+                // Padding(
+                //   padding: const EdgeInsets.only(top: 0, left: 4),
+                //   child: Text(
+                //     _settlementHint(_fromAsset),
+                //     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                //       color: Theme.of(
+                //         context,
+                //       ).colorScheme.onSurface.withOpacity(0.45),
+                //     ),
+                //   ),
+                // ),
 
                 // Available + validation hints
                 Padding(
@@ -820,9 +821,10 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                             ? null
                             : () {
                                 final toUse = available - _estimatedFeeXLM();
-                                _fromAmountController.text = toUse.toStringAsFixed(
-                                  _fromAsset == 'XLM' ? 4 : 2,
-                                );
+                                _fromAmountController.text = toUse
+                                    .toStringAsFixed(
+                                      _fromAsset == 'XLM' ? 4 : 2,
+                                    );
                                 _onAmountChanged(
                                   _fromAmountController.text,
                                   field: 'from',
@@ -830,28 +832,32 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                               },
                         child: Text(
                           'Available: ${available.toStringAsFixed(_fromAsset == 'XLM' ? 4 : 6)} ${_displayAsset(_fromAsset)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0.4),
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.4),
+                              ),
                         ),
                       ),
                       if (_hasInsufficientBalance && _quoteError != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          'Insufficient balance',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFFFA726),
-                            fontWeight: FontWeight.w500,
-                          ),
+                          'Insufficient balance'
+                          " - "
+                          'Available: ${available.toStringAsFixed(_fromAsset == 'XLM' ? 4 : 6)} ${_displayAsset(_fromAsset)}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: const Color(0xFFFFA726),
+                                fontWeight: FontWeight.w500,
+                              ),
                         ),
                       ],
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 32),
 
                 // Flip button
                 Center(
@@ -1027,9 +1033,9 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                   child: Text(
                     _settlementHint(_toAsset),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(
-                        0.45,
-                      ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.45),
                     ),
                   ),
                 ),
@@ -1201,22 +1207,32 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
                 splashColor: Colors.transparent,
                 highlightColor: Colors.transparent,
                 hoverColor: Colors.transparent,
-                onTap: isDisabled
-                    ? null
-                    : () {
-                        Navigator.pop(context);
-                        setState(() {
-                          if (isFrom) {
-                            _fromAsset = code;
-                          } else {
-                            _toAsset = code;
-                          }
-                          _quote = null;
-                        });
-                        if (_fromAmountController.text.isNotEmpty) {
-                          _fetchQuote();
-                        }
-                      },
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    if (isFrom) {
+                      if (code == _toAsset) {
+                        // Tapped the asset already used on the other side → flip
+                        final tmp = _fromAsset;
+                        _fromAsset = _toAsset;
+                        _toAsset = tmp;
+                      } else {
+                        _fromAsset = code;
+                      }
+                    } else {
+                      if (code == _fromAsset) {
+                        // Tapped the asset already used on the other side → flip
+                        final tmp = _fromAsset;
+                        _fromAsset = _toAsset;
+                        _toAsset = tmp;
+                      } else {
+                        _toAsset = code;
+                      }
+                    }
+                    _quote = null;
+                  });
+                  if (_fromAmountController.text.isNotEmpty) _fetchQuote();
+                },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.symmetric(
@@ -1263,12 +1279,12 @@ class _SwapScreenState extends ConsumerState<SwapScreen> {
 
                       if (isDisabled && !isSelected)
                         Text(
-                          'In use ',
+                          'Tap to swap',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.3),
+                                ).colorScheme.onSurface.withOpacity(0.45),
                               ),
                         ),
                     ],
@@ -1387,3 +1403,17 @@ class _Row extends StatelessWidget {
     );
   }
 }
+
+// Yeah, that's the problem — NGNT on Stellar is not a proper NGN stablecoin. It's not pegged 1:1 to the Naira at all.
+// From your data:
+
+// 1,983 NGNT ≈ $0.17 USD
+// That means 1 NGNT ≈ $0.000086 — essentially worthless/arbitrary value
+// Real NGN rate is ~$0.00065 per ₦1 (₦1,500/$1), so NGNT isn't even close
+
+// What NGNT actually is on Stellar: It's a community-issued token, not a properly backed stablecoin. There's no issuer maintaining a 1:1 peg with reserves. It's basically a named token that floats freely with no real anchor.
+
+// Drop NGNT entirely — just use USDC on Stellar for the blockchain side, and display NGN values by converting at live rates. This is what most serious Stellar fintechs do for Nigerian users.
+// Use USDC as the settlement layer — users fund in NGN via Flutterwave → you hold/move USDC on-chain → display NGN equivalent using a live rate feed (e.g. Flutterwave FX rates or CBN rate).
+
+// Practical recommendation for DayFi: Go with option 2. USDC is the real dollar-stable asset on Stellar, and you already have Flutterwave for NGN on/off-ramp. NGNT adds confusion without adding value.

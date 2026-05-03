@@ -117,61 +117,18 @@ async function processDepositSuccess({ userId, txRef, flwRef, amount, currency =
     const created = await prisma.transaction.create({
       data: {
         userId, type: 'fiatDeposit', status: 'confirmed',
-        amount: amountNum, asset: 'NGNT', network: 'flutterwave',
+        amount: amountNum, asset: 'USDC', network: 'flutterwave',
         flutterwaveRef: txRef,
         fiatAmount: amountNum,
         fiatCurrency: String(currency || 'NGN').toUpperCase(),
         flutterwaveStatus: String(providerStatus).toLowerCase(),
-        memo: 'Flutterwave NGN top-up',
+        memo: 'Flutterwave NGN deposit - pending settlement',
       },
     });
     fiatTxId = created.id;
   }
 
-  let settlement = null;
-  const autoSettle = String(process.env.AUTO_SETTLE_NGNT_TOPUPS || 'true').toLowerCase() === 'true';
-  if (autoSettle) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { stellarPublicKey: true } });
-    if (user?.stellarPublicKey) {
-      const settledAlready = await prisma.transaction.findFirst({
-        where: { userId, type: 'receive', network: 'stellar', flutterwaveRef: txRef, asset: 'NGNT' },
-      });
-      if (!settledAlready) {
-        try {
-          const memo = `Top-up ${txRef}`.slice(0, 28);
-          const sent = await sendAssetFromMasterWallet(user.stellarPublicKey, amountNum, 'NGNT', memo);
-          await prisma.transaction.create({
-            data: {
-              userId, type: 'receive', status: 'confirmed',
-              amount: amountNum, asset: 'NGNT', network: 'stellar',
-              fromAddress: process.env.MASTER_WALLET_PUBLIC_KEY || null,
-              toAddress: user.stellarPublicKey,
-              stellarTxHash: sent.hash,
-              flutterwaveRef: txRef,
-              memo: 'NGNT settlement from top-up',
-            },
-          });
-          settlement = { status: 'settled', hash: sent.hash, amount: amountNum };
-        } catch (err) {
-          settlement = { status: 'settlement_failed', error: err.message };
-        }
-      } else {
-        settlement = { status: 'already_settled' };
-      }
-    } else {
-      settlement = { status: 'wallet_not_ready' };
-    }
-  } else {
-    settlement = { status: 'disabled' };
-  }
-
-  if (fiatTxId) {
-    const settlementStatus = settlement?.status === 'settled' || settlement?.status === 'already_settled'
-      ? 'settled' : 'pending_settlement';
-    await prisma.transaction.update({ where: { id: fiatTxId }, data: { flutterwaveStatus: settlementStatus } });
-  }
-
-  return { processed: true, settlement };
+  return { processed: true, settlement: { status: 'pending_settlement' } };
 }
 
 // ─── GET /api/payments/virtual-account ───────────────────────────────────────

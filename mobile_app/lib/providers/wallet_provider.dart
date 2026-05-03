@@ -12,7 +12,6 @@ import '../services/payments_service.dart';
 class WalletState {
   final double usdcBalance;
   final double xlmBalance;
-  final double ngntBalance;
   final double xlmPriceUSD;
   final String? stellarAddress;
   final String? dayfiUsername;
@@ -33,7 +32,6 @@ class WalletState {
   const WalletState({
     this.usdcBalance = 0.0,
     this.xlmBalance = 0.0,
-    this.ngntBalance = 0.0,
     this.xlmPriceUSD = 0.169,
     this.stellarAddress,
     this.dayfiUsername,
@@ -61,7 +59,6 @@ class WalletState {
   WalletState copyWith({
     double? usdcBalance,
     double? xlmBalance,
-    double? ngntBalance,
     double? xlmPriceUSD,
     String? stellarAddress,
     String? dayfiUsername,
@@ -80,7 +77,6 @@ class WalletState {
     return WalletState(
       usdcBalance:          usdcBalance    ?? this.usdcBalance,
       xlmBalance:           xlmBalance     ?? this.xlmBalance,
-      ngntBalance:          ngntBalance    ?? this.ngntBalance,
       xlmPriceUSD:          xlmPriceUSD   ?? this.xlmPriceUSD,
       stellarAddress:       stellarAddress ?? this.stellarAddress,
       dayfiUsername:        dayfiUsername  ?? this.dayfiUsername,
@@ -164,12 +160,10 @@ class WalletNotifier extends StateNotifier<WalletState> {
 
       final usdc = (balances['USDC'] as num?)?.toDouble() ?? 0.0;
       final xlm  = (balances['XLM']  as num?)?.toDouble() ?? 0.0;
-      final ngnt = (balances['NGNT'] as num?)?.toDouble() ?? 0.0;
 
       state = state.copyWith(
         usdcBalance:    usdc,
         xlmBalance:     xlm,
-        ngntBalance:    ngnt,
         xlmPriceUSD:    xlmPrice,
         stellarAddress: addressData['stellarAddress'] as String?,
         dayfiUsername:  addressData['dayfiUsername']  as String?,
@@ -225,12 +219,10 @@ class WalletNotifier extends StateNotifier<WalletState> {
 
       final usdc = (balances['USDC'] as num?)?.toDouble() ?? 0.0;
       final xlm  = (balances['XLM']  as num?)?.toDouble() ?? 0.0;
-      final ngnt = (balances['NGNT'] as num?)?.toDouble() ?? 0.0;
 
       state = state.copyWith(
         usdcBalance:    usdc,
         xlmBalance:     xlm,
-        ngntBalance:    ngnt,
         xlmPriceUSD:    xlmPrice,
         isRefreshing:   false,
         hasError:       false,
@@ -295,13 +287,13 @@ class WalletNotifier extends StateNotifier<WalletState> {
   // ─── Withdraw ─────────────────────────────────────────────
 
 Future<Map<String, dynamic>> withdraw({
-  required double ngntAmount,
+  required double usdcAmount,
   required String bankCode,
   required String accountNumber,
   required String accountName,
 }) async {
   final result = await paymentsService.withdraw(
-    ngntAmount:     ngntAmount,
+    usdcAmount:     usdcAmount,
     bankCode:       bankCode,
     accountNumber:  accountNumber,
     accountName:    accountName,
@@ -349,9 +341,6 @@ final usdcBalanceProvider = Provider<double>(
 );
 final xlmBalanceProvider = Provider<double>(
   (ref) => ref.watch(walletProvider).xlmBalance,
-);
-final ngntBalanceProvider = Provider<double>(
-  (ref) => ref.watch(walletProvider).ngntBalance,
 );
 final xlmPriceProvider = Provider<double>(
   (ref) => ref.watch(walletProvider).xlmPriceUSD,

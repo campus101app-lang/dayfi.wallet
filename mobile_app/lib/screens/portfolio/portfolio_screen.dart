@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http show get;
 import 'package:mobile_app/widgets/app_background.dart';
 import 'package:mobile_app/widgets/app_bottomsheet.dart';
@@ -416,10 +417,10 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.only(top: 0),
               child: Text(
                 '\$',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                style: GoogleFonts.bricolageGrotesque(
                   fontWeight: FontWeight.w400,
                   color: Theme.of(
                     context,
@@ -431,10 +432,10 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
             ),
             Text(
               whole,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              style: GoogleFonts.bricolageGrotesque(
                 fontSize: 64,
                 fontWeight: FontWeight.w400,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(.85),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(1),
                 letterSpacing: 0.4,
                 height: .88,
               ),
@@ -443,13 +444,14 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
               padding: const EdgeInsets.only(top: 12),
               child: Text(
                 decimal,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                style: GoogleFonts.bricolageGrotesque(
                   fontWeight: FontWeight.w400,
-                  fontSize: 28,
+                  fontSize: 32,
                   color: Theme.of(
                     context,
                   ).colorScheme.onSurface.withOpacity(.85),
                   letterSpacing: 0.4,
+                  height: 1.2,
                 ),
               ),
             ),
@@ -820,11 +822,12 @@ class _AssetCard extends StatelessWidget {
       if (code == 'NGNT') return 'NGN';
       return code;
     }
-    String? settlementHint(String code) {
-      if (code == 'USDC') return 'USD • Settled via USDC on Stellar';
-      if (code == 'NGNT') return 'NGN • Settled via NGNT on Stellar';
-      return null;
-    }
+
+    // String? settlementHint(String code) {
+    //   if (code == 'USDC') return 'USD • Settled via USDC on Stellar';
+    //   if (code == 'NGNT') return 'NGN • Settled via NGNT on Stellar';
+    //   return null;
+    // }
     final pos = detail.changePercent >= 0;
     return InkWell(
       splashColor: Colors.transparent,
@@ -934,24 +937,24 @@ class _AssetCard extends StatelessWidget {
                 // ),
               ],
             ),
-            if (settlementHint(detail.code) != null) ...[
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 50),
-                  child: Text(
-                    settlementHint(detail.code)!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.4),
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            // if (settlementHint(detail.code) != null) ...[
+            //   const SizedBox(height: 8),
+            //   Align(
+            //     alignment: Alignment.centerLeft,
+            //     child: Padding(
+            //       padding: const EdgeInsets.only(left: 50),
+            //       child: Text(
+            //         settlementHint(detail.code)!,
+            //         style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            //           color: Theme.of(
+            //             context,
+            //           ).colorScheme.onSurface.withOpacity(0.4),
+            //           fontSize: 11,
+            //         ),
+            //       ),
+            //     ),
+            //   ),
+            // ],
           ],
         ),
       ),
@@ -981,6 +984,7 @@ class _AssetDetailSheetState extends State<_AssetDetailSheet> {
       if (code == 'NGNT') return 'NGN';
       return code;
     }
+
     final pos = d.changePercent >= 0;
     final changeColor = pos ? DayFiColors.green : Colors.redAccent;
     final changeBg = pos

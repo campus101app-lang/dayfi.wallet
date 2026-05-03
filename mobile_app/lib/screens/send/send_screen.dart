@@ -957,7 +957,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
             ),
           ),
 
-        const SizedBox(height: 4),
+        const SizedBox(height: 20),
         Center(
           child: Text(
             'Available: ${availableNgnt.toStringAsFixed(2)} NGN',
@@ -1577,7 +1577,7 @@ class _BankPickerContentState extends State<_BankPickerContent> {
             ),
           ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
 
           ConstrainedBox(
             constraints: BoxConstraints(
@@ -1600,18 +1600,18 @@ class _BankPickerContentState extends State<_BankPickerContent> {
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 13,
+                      // horizontal: 14,
+                      vertical: 8,
                     ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    // decoration: BoxDecoration(
+                    //   color: Theme.of(
+                    //     context,
+                    //   ).colorScheme.primary.withOpacity(.08),
+                    //   borderRadius: BorderRadius.circular(12),
+                    // ),
                     child: Text(
                       bank['name'] as String,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontSize: 14.5,
                         letterSpacing: -.1,
                       ),
